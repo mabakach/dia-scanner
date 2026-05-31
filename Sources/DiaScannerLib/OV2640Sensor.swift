@@ -21,10 +21,9 @@ public final class OV2640Sensor {
 
     public static let expectedChipID: UInt8 = 0x26
 
-    /// Verifies SCCB bus works by doing a write-only round-trip (reads corrupt bus state on OV2640).
+    /// Verifies SCCB writes work by doing a write-only round-trip (reads corrupt bus state on OV2640).
     public func verifyChipID() throws -> Bool {
-        // Write bank1 select — if this succeeds (no throw), SCCB writes are working
-        try transport.writeSensorRegister(Reg.bankSelect, value: 0x01)
+        try transport.writeSensorRegister(Reg.bankSelect, value: 0x01)  // sensor bank
         try transport.writeSensorRegister(Reg.bankSelect, value: 0x00)  // restore DSP bank
         return true
     }

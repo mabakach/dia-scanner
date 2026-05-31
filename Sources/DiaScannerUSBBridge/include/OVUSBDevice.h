@@ -53,6 +53,10 @@ extern NSErrorDomain const OVUSBErrorDomain;
 /// Executes a sequence of [register, value, mask] sensor triplets (via I2C).
 - (BOOL)applySensorRegisterSequence:(NSData *)triplets error:(NSError *__autoreleasing *)error;
 
+/// Reads F6 once to acknowledge/clear any stale NACK status left by a previous run.
+/// Call after power-on, before the first SCCB write.
+- (void)clearSCCBStatus;
+
 // ─── Interface and streaming ──────────────────────────────────────
 
 /// Selects the USB interface alternate setting (0=idle, 1=streaming).

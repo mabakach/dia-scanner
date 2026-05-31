@@ -261,9 +261,6 @@ static NSError *ovError(OVUSBError code, NSString *description) {
 }
 
 - (BOOL)writeSensorRegister:(uint8_t)reg value:(uint8_t)value error:(NSError **)error {
-    // Read F6 to acknowledge/clear any stale status from a prior operation or previous run.
-    // The OV550 ignores new SCCB triggers while F6 holds an unacknowledged result (0x04 NACK).
-    [self _rawRead:0x01 reg:0xF6];
     if (![self writeRegister:0xF2 value:reg   error:error]) return NO;  // SUBADDR
     if (![self writeRegister:0xF3 value:value error:error]) return NO;  // WRITE data
     if (![self writeRegister:0xF5 value:0x37  error:error]) return NO;  // OPERATION: 3-phase write
@@ -272,6 +269,13 @@ static NSError *ovError(OVUSBError code, NSString *description) {
         return NO;
     }
     return YES;
+}
+
+- (void)clearSCCBStatus {
+    // Read F6 once to acknowledge/clear any stale NACK status from a previous run.
+    // Call after power-on, before first SCCB operation. The OV550 SCCB controller
+    // ignores new triggers while it holds an unacknowledged F6=0x04 result.
+    [self _rawRead:0x01 reg:0xF6];
 }
 
 - (nullable NSNumber *)readSensorRegister:(uint8_t)reg error:(NSError **)error {

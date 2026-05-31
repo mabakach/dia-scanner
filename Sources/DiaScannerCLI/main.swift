@@ -43,6 +43,9 @@ func run() throws {
     Thread.sleep(forTimeInterval: 0.1)
     try ov550.powerOn()
     Thread.sleep(forTimeInterval: 0.5)
+    // Read F6 once to acknowledge/clear any stale NACK left by a previous run.
+    // Must happen after power-on, before any SCCB write — otherwise OV550 ignores triggers.
+    device.clearSCCBStatus()
 
     // Apply Base UsbSetting BEFORE enabling streaming (E0 still 0x08 from powerOn).
     // Windows driver applies Base UsbSetting at connect time, before TurnOnLed.
