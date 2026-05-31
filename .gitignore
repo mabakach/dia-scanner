@@ -1,0 +1,12 @@
+manual/
+windows-driver/
+.DS_Store
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcuserdata/
+.build/
+.swiftpm/
+Package.resolved
+*.o
+*.d
