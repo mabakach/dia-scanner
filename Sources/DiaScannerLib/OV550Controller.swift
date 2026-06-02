@@ -120,7 +120,7 @@ public final class OV550Controller {
         try transport.writeRegister(0xDA, value: 0x00)                 // da=0x00
         try transport.writeRegister(0xC3, value: 0xF9)                 // c3=0xf9 enable PRE
         try transport.writeRegister(Register.outputFmt1, value: 0x0A)  // 1c=0x0a
-        try transport.writeRegister(Register.outputFmt2, value: 0x0A)  // 1d=0x0a
+        try transport.writeRegister(Register.outputFmt2, value: 0x12)  // 1d=0x12 (≈1200 rows; was 0x0a=676 rows)
         try transport.writeRegister(Register.outputFmt2, value: 0x1E)  // 1d=0x1e
     }
 

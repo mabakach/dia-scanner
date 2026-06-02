@@ -91,6 +91,15 @@ static NSError *ovError(OVUSBError code, NSString *description) {
         _device = NULL;
         return NO;
     }
+
+    // USB bus reset clears OV550 firmware state (SCCB bridge, PRE, FIFO) that persists
+    // across software close/open cycles as long as USB power is present.  Without this,
+    // run-2 always fails with SCCB NACK because the OV550's SCCB controller is stuck
+    // in a state left over from the previous isoch run's C3/PRE activity.
+    IOReturn resetRet = (*dev)->ResetDevice(dev);
+    [self _log:[NSString stringWithFormat:@"USB ResetDevice: 0x%08x", resetRet]];
+    usleep(500000);  // 500ms for OV550 to complete reset and re-settle
+
     (*dev)->SetConfiguration(dev, 1);
 
     // ── Step 2: open interface via IOUSBHostInterface (isoch + alt setting) ──
@@ -244,9 +253,11 @@ static NSError *ovError(OVUSBError code, NSString *description) {
 
 - (BOOL)_sccbWaitIdle {
     // Poll F6 (STATUS) up to 5 times × 20ms = 100ms max.
-    // F6 is pre-cleared by writeSensorRegister before the trigger, so 0x04 here is a real NACK.
+    // Reading F5 before F6 each iteration: F5 read completes the OV550's post-write state
+    // machine cycle, allowing F6 to reflect the result of the current operation.
     for (int i = 0; i < 5; i++) {
         usleep(20000);  // 20ms per poll — SCCB 3-phase write takes <1ms, so one poll is enough
+        [self _rawRead:0x01 reg:0xF5];  // complete OV550 post-write cycle before reading status
         NSNumber *v = [self _rawRead:0x01 reg:0xF6];
         if (!v) break;
         uint8_t s = v.unsignedCharValue;
@@ -272,9 +283,9 @@ static NSError *ovError(OVUSBError code, NSString *description) {
 }
 
 - (void)clearSCCBStatus {
-    // Read F6 once to acknowledge/clear any stale NACK status from a previous run.
-    // Call after power-on, before first SCCB operation. The OV550 SCCB controller
-    // ignores new triggers while it holds an unacknowledged F6=0x04 result.
+    // Read F6 once to acknowledge any stale NACK status from a previous run.
+    // Reading F5 here (without a pending trigger) triggers spurious OV550 state machine
+    // cycles that corrupt subsequent writes — only read F5 inside _sccbWaitIdle.
     [self _rawRead:0x01 reg:0xF6];
 }
 
@@ -384,19 +395,45 @@ static NSError *ovError(OVUSBError code, NSString *description) {
     }
 
     // Each isochronous transaction covers one microframe slot (kPktSize bytes max).
-    const NSUInteger kBatch = 256;
+    // kBatch=512 (64ms per batch) ensures the full burst (~214 MFs = 26ms) fits
+    // within the batch regardless of where in the batch VSYNC arrives (firstAt).
+    // With kBatch=256 (32ms), a late VSYNC (firstAt>42) loses burst data in the
+    // processing gap between batch submissions. kBatch=1024 exceeds XHCI scheduler limits.
+    const NSUInteger kBatch = 512;
 
     NSMutableData *batchBuf = [NSMutableData dataWithLength:(size_t)kBatch * kPktSize];
     IOUSBHostIsochronousTransaction *txList =
         (IOUSBHostIsochronousTransaction *)calloc(kBatch, sizeof(IOUSBHostIsochronousTransaction));
 
-    NSMutableData *accum = [NSMutableData dataWithCapacity:2000000];
-    BOOL inFrame = NO;
+    NSMutableData *accum = [NSMutableData dataWithCapacity:700000];
+    int8_t currentFID = -1;   // -1 = not yet seen first packet
     NSData *result = nil;
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
     NSUInteger batchIndex = 0;
+    NSUInteger dumpedBatches = 0;
+    BOOL prevBatchDense = NO;
+
+    // Seed the frame schedule 16 microframes (~2ms) ahead to ensure we're in the future.
+    // Track nextFrameNumber explicitly so each batch is scheduled gaplessly from the
+    // previous one — using firstFrameNumber:0 (auto) causes XHCI to drop the bandwidth
+    // reservation after a few batches when starting from a fresh USB replug.
+    // frameNumberWithTime: returns USB 1ms frames; kBatch=512 microframes = 64 USB frames.
+    // Advance by 64 per batch for gapless coverage; clamp if processing falls behind.
+    const uint64_t kBatchUSBFrames = 64;
+    uint64_t nextFrameNumber = [_hostIface frameNumberWithTime:nil] + 16;
 
     while (!result && [[NSDate date] compare:deadline] == NSOrderedAscending) {
+        // Start streaming (E0=0x00) here, at batch 0, immediately before sendIORequestWithData.
+        // configureForOV2640RAW8 armed C3 and loaded the FIFO with E0=0x08. The E0=0x08→0x00
+        // transition latches the FIFO/PRE config. Moving startStream here (vs. calling it from
+        // main.swift before readFrame) shrinks the race window from ~10ms to ~3ms (one USB
+        // control transfer), so C3 firing at the first VSYNC (~500ms away) is caught by batch 0.
+        if (batchIndex == 0) {
+            [self writeRegister:0xE0 value:0x00 error:nil]; // startStream — latches FIFO/C3
+            nextFrameNumber = [_hostIface frameNumberWithTime:nil] + 16;
+            [self _log:@"startStream (E0=0x00) at batch 0: FIFO/C3 latched, pipe active in <1ms"];
+        }
+
         // Set up transactions: each covers one packet-sized slot in batchBuf
         memset(txList, 0, kBatch * sizeof(IOUSBHostIsochronousTransaction));
         for (NSUInteger i = 0; i < kBatch; i++) {
@@ -408,72 +445,136 @@ static NSError *ovError(OVUSBError code, NSString *description) {
         BOOL ok = [pipe sendIORequestWithData:batchBuf
                               transactionList:txList
                          transactionListCount:kBatch
-                             firstFrameNumber:0  // automatic scheduling on XHCI
+                             firstFrameNumber:nextFrameNumber
                                       options:0
                                         error:&hostErr];
-
-        // Log batch summary + first non-empty packet content
-        uint32_t nonEmpty = 0;
-        NSUInteger firstNonEmptyIdx = NSNotFound;
-        IOReturn firstBadStatus = kIOReturnSuccess;
-        for (NSUInteger i = 0; i < kBatch; i++) {
-            if (txList[i].completeCount > 0 && firstNonEmptyIdx == NSNotFound)
-                firstNonEmptyIdx = i;
-            if (txList[i].completeCount > 0) nonEmpty++;
-            if (txList[i].status != kIOReturnSuccess
-                && firstBadStatus == kIOReturnSuccess) {
-                firstBadStatus = txList[i].status;
-            }
+        // Advance by exactly one batch duration for gapless coverage.
+        // Clamp to current+2 if processing overhead caused us to fall behind.
+        nextFrameNumber += kBatchUSBFrames;
+        uint64_t nowFrame = [_hostIface frameNumberWithTime:nil];
+        if (nextFrameNumber < nowFrame) {
+            nextFrameNumber = nowFrame + 2;
         }
-        if (nonEmpty > 0 || batchIndex < 3) {
-            [self _log:[NSString stringWithFormat:
-                @"isoch batch[%zu]: ok=%d nonEmpty=%u/%zu firstAt=%zu bytes=%u",
-                (size_t)batchIndex, ok, nonEmpty, (size_t)kBatch,
-                firstNonEmptyIdx == NSNotFound ? 9999 : firstNonEmptyIdx,
-                firstNonEmptyIdx != NSNotFound ? txList[firstNonEmptyIdx].completeCount : 0]];
-        }
-        // Dump bytes of first non-empty packet (only first 5 batches with data)
-        static NSUInteger dumpCount = 0;
-        if (firstNonEmptyIdx != NSNotFound && dumpCount < 5) {
-            dumpCount++;
-            const uint8_t *p = (const uint8_t *)batchBuf.bytes + firstNonEmptyIdx * kPktSize;
-            uint32_t n = txList[firstNonEmptyIdx].completeCount;
-            NSMutableString *hex = [NSMutableString string];
-            for (uint32_t j = 0; j < n && j < 32; j++)
-                [hex appendFormat:@"%02X ", p[j]];
-            [self _log:[NSString stringWithFormat:@"  pkt[%zu] %u bytes: %@", firstNonEmptyIdx, n, hex]];
-        }
-        batchIndex++;
 
         if (!ok && hostErr) {
             IOReturn kr = (IOReturn)hostErr.code;
             if (kr != kIOReturnSuccess && kr != kIOReturnUnderrun) {
-                [self _log:[NSString stringWithFormat:@"isoch batch fatal: %@", hostErr]];
+                [self _log:[NSString stringWithFormat:@"isoch batch[%zu] fatal kr=0x%08X accum=%zu: %@",
+                    (size_t)batchIndex, (uint32_t)kr, accum.length, hostErr]];
+                // If burst already received enough data, return it rather than failing
+                if (accum.length >= 480000) {
+                    result = [accum copy];
+                }
                 break;
             }
         }
 
-        // Parse isochronous packets for OV550 frame sync bytes (0xFF = start, 0xFE = end)
+        // Parse OV550 isochronous packets (UVC-compatible payload format):
+        // byte[0] = bHeaderLength (0x0C = 12); byte[1] = bmHeaderInfo flags:
+        //   bit 0 = FID (toggles on each new frame boundary)
+        //   bit 1 = EOF (last packet of a frame)
+        //   bit 6 = ERR (discard this payload)
+        // Pixel data starts at byte[hlen]. Strip header, accumulate payload.
         const uint8_t *batchBytes = (const uint8_t *)batchBuf.bytes;
-        for (NSUInteger i = 0; i < kBatch; i++) {
+        uint32_t nonEmpty = 0;
+        NSUInteger firstNonEmptyIdx = NSNotFound;
+        for (NSUInteger i = 0; i < kBatch && !result; i++) {
             uint32_t actual = txList[i].completeCount;
             if (actual == 0) continue;
+            nonEmpty++;
+            if (firstNonEmptyIdx == NSNotFound) firstNonEmptyIdx = i;
 
             const uint8_t *pkt  = batchBytes + (size_t)i * kPktSize;
-            uint8_t        sync = pkt[0];
+            uint8_t hlen  = pkt[0];
+            uint8_t flags = (actual >= 2) ? pkt[1] : 0;
 
-            if (sync == 0xFF) {
-                [accum setLength:0];
-                inFrame = YES;
-                if (actual > 1) [accum appendBytes:pkt + 1 length:actual - 1];
-            } else if (sync == 0xFE && inFrame) {
-                if (actual > 1) [accum appendBytes:pkt + 1 length:actual - 1];
+            if (hlen == 0 || hlen > actual) continue;  // malformed packet
+
+            uint8_t fid = flags & 0x01;
+            uint8_t eof = (flags >> 1) & 0x01;
+            uint8_t err = (flags >> 6) & 0x01;
+            if (err) continue;
+
+            // FID toggle → previous accumulation is one complete frame
+            if (currentFID >= 0 && fid != (uint8_t)currentFID && accum.length > 0) {
+                [self _log:[NSString stringWithFormat:
+                    @"isoch FID toggle batch[%zu] pkt[%zu]: %zu bytes → frame done",
+                    (size_t)batchIndex, i, accum.length]];
                 result = [accum copy];
                 break;
-            } else if (inFrame) {
-                [accum appendBytes:pkt length:actual];
             }
+            currentFID = fid;
+
+            uint32_t payloadLen = actual - hlen;
+            if (payloadLen > 0) {
+                // Cap at exactly one frame (1600×1200 RAW8 = 1,920,000 bytes)
+                NSUInteger remaining = 1920000 - accum.length;
+                NSUInteger toAppend = payloadLen < remaining ? payloadLen : remaining;
+                [accum appendBytes:pkt + hlen length:toAppend];
+                if (accum.length >= 1920000) {
+                    [self _log:[NSString stringWithFormat:
+                        @"isoch full frame (%zu bytes) at batch[%zu] pkt[%zu]",
+                        accum.length, (size_t)batchIndex, i]];
+                    result = [accum copy];
+                    break;
+                }
+            }
+
+            // EOF bit: end of this frame
+            if (eof && accum.length > 0) {
+                [self _log:[NSString stringWithFormat:
+                    @"isoch EOF bit batch[%zu] pkt[%zu]: %zu bytes → frame done",
+                    (size_t)batchIndex, i, accum.length]];
+                result = [accum copy];
+                break;
+            }
+
         }
+
+        // One burst per C3 arm: the OV550 flushes its FIFO in one dense burst per VSYNC.
+        // Return on: (a) dense→sparse transition, or (b) enough data for a full frame.
+        BOOL thisBatchDense = (nonEmpty > 10);
+        if (!result && accum.length >= 1900000) {
+            [self _log:[NSString stringWithFormat:
+                @"frame size reached: returning %zu bytes", accum.length]];
+            result = [accum copy];
+        }
+        if (!result && prevBatchDense && !thisBatchDense && accum.length > 0) {
+            [self _log:[NSString stringWithFormat:
+                @"dense→sparse: burst complete, returning %zu bytes", accum.length]];
+            result = [accum copy];
+        }
+        prevBatchDense = thisBatchDense;
+
+        // Log batch summary: first 3, non-empty batches, and all batches once burst starts
+        BOOL burstSeen = (accum.length > 100);
+        if (nonEmpty > 0 || batchIndex < 3 || (burstSeen && batchIndex <= 40)) {
+            NSString *firstFlags = @"";
+            if (firstNonEmptyIdx != NSNotFound) {
+                const uint8_t *p = batchBytes + firstNonEmptyIdx * kPktSize;
+                uint32_t n = txList[firstNonEmptyIdx].completeCount;
+                if (n >= 2) firstFlags = [NSString stringWithFormat:
+                    @" hdr=%02X/%02X fid=%u eof=%u err=%u",
+                    p[0], p[1], p[1] & 1, (p[1] >> 1) & 1, (p[1] >> 6) & 1];
+            }
+            [self _log:[NSString stringWithFormat:
+                @"isoch batch[%zu]: ok=%d nonEmpty=%u/%zu firstAt=%zu accum=%zu%@",
+                (size_t)batchIndex, ok, nonEmpty, (size_t)kBatch,
+                firstNonEmptyIdx == NSNotFound ? 9999 : firstNonEmptyIdx,
+                accum.length, firstFlags]];
+        }
+        // Hex dump first non-empty packet for first 10 data batches
+        if (firstNonEmptyIdx != NSNotFound && dumpedBatches < 10) {
+            dumpedBatches++;
+            const uint8_t *p = batchBytes + firstNonEmptyIdx * kPktSize;
+            uint32_t n = txList[firstNonEmptyIdx].completeCount;
+            NSMutableString *hex = [NSMutableString string];
+            for (uint32_t j = 0; j < n && j < 32; j++)
+                [hex appendFormat:@"%02X ", p[j]];
+            [self _log:[NSString stringWithFormat:@"  pkt[%zu] %u bytes: %@",
+                firstNonEmptyIdx, n, hex]];
+        }
+        batchIndex++;
     }
 
     free(txList);
