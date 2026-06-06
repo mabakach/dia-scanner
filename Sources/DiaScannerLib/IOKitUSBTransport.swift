@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * PX-2130 Slide Scanner macOS Driver
+ *
+ * Copyright (C) 2026 Marc Baumgartner <marc@mabaka.ch>
+ *
+ * Based on ov2640 Camera Driver
+ * Copyright (C) 2010 Alberto Panizzo <maramaopercheseimorto@gmail.com>
+ * Copyright 2005-2009 Freescale Semiconductor, Inc. All Rights Reserved.
+ * Copyright (C) 2006, OmniVision
+ */
+
 import Foundation
 import DiaScannerUSBBridge
 

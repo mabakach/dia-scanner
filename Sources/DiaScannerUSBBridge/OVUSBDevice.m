@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * PX-2130 Slide Scanner macOS Driver
+ *
+ * Copyright (C) 2026 Marc Baumgartner <marc@mabaka.ch>
+ *
+ * Based on ov2640 Camera Driver
+ * Copyright (C) 2010 Alberto Panizzo <maramaopercheseimorto@gmail.com>
+ * Copyright 2005-2009 Freescale Semiconductor, Inc. All Rights Reserved.
+ * Copyright (C) 2006, OmniVision
+ */
+
 #import "OVUSBDevice.h"
 #import <IOKit/IOKitLib.h>
 #import <IOKit/usb/IOUSBLib.h>
@@ -98,7 +110,7 @@ static NSError *ovError(OVUSBError code, NSString *description) {
     // in a state left over from the previous isoch run's C3/PRE activity.
     IOReturn resetRet = (*dev)->ResetDevice(dev);
     [self _log:[NSString stringWithFormat:@"USB ResetDevice: 0x%08x", resetRet]];
-    usleep(500000);  // 500ms for OV550 to complete reset and re-settle
+    usleep(2000000);  // 2s: after isoch run the SCCB bridge needs longer to clear than 500ms
 
     (*dev)->SetConfiguration(dev, 1);
 

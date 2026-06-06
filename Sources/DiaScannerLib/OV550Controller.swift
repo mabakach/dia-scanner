@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * PX-2130 Slide Scanner macOS Driver
+ *
+ * Copyright (C) 2026 Marc Baumgartner <marc@mabaka.ch>
+ *
+ * Based on ov2640 Camera Driver
+ * Copyright (C) 2010 Alberto Panizzo <maramaopercheseimorto@gmail.com>
+ * Copyright 2005-2009 Freescale Semiconductor, Inc. All Rights Reserved.
+ * Copyright (C) 2006, OmniVision
+ */
+
 import Foundation
 
 /// Commands for the OV550 USB ASIC bridge chip.
@@ -90,7 +102,7 @@ public final class OV550Controller {
     /// Must be called once at connect time (alt=0) before any streaming.
     /// This primes the 1C/1D command FIFO with the initial state.
     public func applyBaseUSBConfig() throws {
-        try transport.writeRegister(Register.sccbId,     value: 0x60)  // f1=0x60
+        try transport.writeRegister(Register.sccbId,     value: 0x60)  // f1=0x60 SCCB slave addr
         try transport.writeRegister(Register.hSizeLow,   value: 0xFF)  // 88=0xFF accept any
         try transport.writeRegister(Register.hSizeHigh,  value: 0xFF)  // 89=0xFF
         try transport.writeRegister(Register.vSizeLow,   value: 0xFF)  // 8a=0xFF
@@ -109,7 +121,6 @@ public final class OV550Controller {
     /// Applies the FrameRate1 UsbSetting from apollo2640.set 1600×1200RAW8.
     /// Called once at stream start (after sensor init, before alt=1).
     public func configureForOV2640RAW8() throws {
-        try transport.writeRegister(Register.sccbId,     value: 0x60)  // f1=0x60
         try transport.writeRegister(Register.cclk,       value: 0x04)  // e5=0x04 CCLK 24MHz
         try transport.writeRegister(Register.isoControl, value: 0x00)  // 8c=0x00
         try transport.writeRegister(Register.inputFormat, value: 0x1C) // 8d=0x1c RAW
