@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# PX-2130 Slide Scanner macOS Driver — raw capture analysis tool.
+#
+# Copyright (C) 2026 Marc Baumgartner <marc@mabaka.ch>
 """
 Analyze RAW8 captures from the PX-2130 scanner.
 Usage: python3 tools/analyze_raw.py [raw_file] [--bmp bmp_file]

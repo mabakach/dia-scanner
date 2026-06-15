@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * PX-2130 Slide Scanner macOS Driver — OV550Controller tests.
+ *
+ * Copyright (C) 2026 Marc Baumgartner <marc@mabaka.ch>
+ */
+
 import XCTest
 @testable import DiaScannerLib
 

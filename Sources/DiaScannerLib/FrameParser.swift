@@ -1,13 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * PX-2130 Slide Scanner macOS Driver
+ * PX-2130 Slide Scanner macOS Driver — UVC-style payload header parser.
  *
  * Copyright (C) 2026 Marc Baumgartner <marc@mabaka.ch>
  *
- * Based on ov2640 Camera Driver
- * Copyright (C) 2010 Alberto Panizzo <maramaopercheseimorto@gmail.com>
- * Copyright 2005-2009 Freescale Semiconductor, Inc. All Rights Reserved.
- * Copyright (C) 2006, OmniVision
+ * Header decoding (EOH/ERR/SCR/PTS/EOF/FID flags) is derived from the
+ * Linux ov534-ov9xxx gspca driver `sd_pkt_scan`
+ * (drivers/media/usb/gspca/ov534_9.c):
+ *   Copyright (C) 2009-2011 Jean-Francois Moine <http://moinejf.free.fr>
+ *   Copyright (C) 2008      Antonio Ospite <ospite@studenti.unina.it>
+ *   Copyright (C) 2008      Jim Paris <jim@jtan.com>
  */
 
 import Foundation

@@ -2,8 +2,15 @@
 /*
  * PX-2130 Slide Scanner macOS Driver — OV5621 sensor support.
  *
- * Port of the OV5621 ("ov562x") init sequences from Linux
- * drivers/media/usb/gspca/ov534_9.c (Jean-Francois Moine, 2009-2011).
+ * Copyright (C) 2026 Marc Baumgartner <marc@mabaka.ch>
+ *
+ * Ported from the Linux ov534-ov9xxx gspca driver
+ * (drivers/media/usb/gspca/ov534_9.c):
+ *   Copyright (C) 2009-2011 Jean-Francois Moine <http://moinejf.free.fr>
+ *   Copyright (C) 2008      Antonio Ospite <ospite@studenti.unina.it>
+ *   Copyright (C) 2008      Jim Paris <jim@jtan.com>
+ *   Based on a prototype by Mark Ferrell <majortrips@gmail.com>
+ *   USB protocol reverse engineered by Jim Paris.
  *
  * Output format: SBGGR8 (BGGR Bayer pattern, 8 bpp), native resolution 2592×1680.
  */
