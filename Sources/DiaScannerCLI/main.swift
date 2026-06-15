@@ -3,7 +3,10 @@ import AppKit
 import DiaScannerLib
 import DiaScannerUSBBridge
 
-// CLI runner: connect → init → capture → save PNG + raw
+// CLI runner — captures one full 2592×1680 SBGGR8 frame from the OV5621 sensor
+// using the gspca_ov534_9 port. Saves raw Bayer to <path>.raw and demosaiced
+// PNG to <path>.png.
+//
 // Usage: swift run DiaScannerCLI [output-path]
 
 let outputPath = CommandLine.arguments.count > 1
@@ -33,112 +36,95 @@ func run() throws {
     log("CLI: device open")
 
     let transport = IOKitUSBTransport(device: device)
-    let ov550     = OV550Controller(transport: transport)
-    let sensor    = OV2640Sensor(transport: transport)
+    let sensor    = OV5621Sensor(transport: transport)
 
-    defer {
-        try? ov550.blockStream()
-        try? transport.writeRegister(0xE5, value: 0x00)
-        Thread.sleep(forTimeInterval: 0.2)
-        device.clearSCCBStatus()
-        try? transport.writeSensorRegister(0xFF, value: 0x01)
-        try? transport.writeSensorRegister(0x12, value: 0x80)  // soft reset
-        Thread.sleep(forTimeInterval: 0.1)
-        device.clearSCCBStatus()
-        try? ov550.powerDown()
-        try? ov550.setLED(on: false)
+    // Detect sensor — confirm it really is OV5621 before applying its init.
+    log("CLI: probing sensor (gspca bridge reset + chip-ID read)")
+    let id = try sensor.detect()
+    log(String(format: "CLI: sensor_id=0x%04X", id))
+    guard (id & 0xFFF0) == 0x5620 else {
+        throw NSError(domain: "diascanner", code: 1,
+                      userInfo: [NSLocalizedDescriptionKey:
+                                 String(format: "Expected OV5621 (0x562X), got 0x%04X", id)])
     }
 
-    log("CLI: powerCycle (clears stale SCCB)")
-    try ov550.powerDown()
-    Thread.sleep(forTimeInterval: 0.2)
-    try ov550.powerOn()
-    Thread.sleep(forTimeInterval: 2.0)
-    device.clearSCCBStatus()
+    // Apply bridge + sensor init sequences from gspca and start the transfer.
+    log("CLI: applying ov562x bridge+sensor init sequences")
+    try sensor.initializeAndStart()
+    log("CLI: init done, transfer started (E0=0x00)")
 
-    if (try? transport.writeSensorRegister(0xFF, value: 0x01)) == nil {
-        log("CLI: SCCB probe NACK — retrying power cycle (3s settle)")
-        try ov550.powerDown()
-        Thread.sleep(forTimeInterval: 0.5)
-        try ov550.powerOn()
-        Thread.sleep(forTimeInterval: 3.0)
-        device.clearSCCBStatus()
-        log("CLI: SCCB retry power cycle done")
-    } else {
-        // Probe succeeded; restore DSP bank so applyBaseUSBConfig starts clean
-        try? transport.writeSensorRegister(0xFF, value: 0x00)
-        device.clearSCCBStatus()
-    }
-
-    // Apply Base UsbSetting with E0=0x08 (SCCB controller free).
-    log("CLI: applyBaseUSBConfig (E0=0x08)")
-    try ov550.applyBaseUSBConfig()
-    Thread.sleep(forTimeInterval: 0.2)
-    device.clearSCCBStatus()
-
-    // Initialize sensor BEFORE setLED (which sets E0=0x00).
-    log("CLI: sensor.initialize() (E0=0x08)")
-    try sensor.initialize()
-    log("CLI: sensor init done")
-
-    log("CLI: applyFrameRate1 sensor regs")
-    try sensor.applyFrameRate1()
-
-    // Verify sensor registers were written correctly.
-    do {
-        try transport.writeSensorRegister(0xFF, value: 0x01)  // sensor bank
-        let clkrc = try? device.readSensorRegister(0x11)
-        let com1  = try? device.readSensorRegister(0x04)
-        log(String(format: "CLI: sensor verify: CLKRC=0x%02X (expect 0x07) COM1=0x%02X (expect 0x33)",
-                   clkrc?.uint8Value ?? 0xFF, com1?.uint8Value ?? 0xFF))
-        try transport.writeSensorRegister(0xFF, value: 0x00)  // back to DSP bank
-    } catch {
-        log("CLI: sensor verify failed: \(error)")
-    }
-
-    // Enable LED and let OV550 sync with sensor before FIFO latching.
-    log("CLI: setLED on + 3s OV550 sync (E0=0x00)")
-    try ov550.setLED(on: true)
-    Thread.sleep(forTimeInterval: 3.0)
-
-    log("CLI: blockStream before FrameRate1 UsbSetting")
-    try ov550.blockStream()
-    log("CLI: configureForOV2640RAW8 (FrameRate1 UsbSetting, E0=0x08)")
-    try ov550.configureForOV2640RAW8()
-    log("CLI: MCLK/PLL settle 1s")
-    Thread.sleep(forTimeInterval: 1.0)
-
+    // Switch USB interface to alternate setting 1 (isochronous endpoint active).
     log("CLI: setAlternateInterface(1)")
     try device.setAlternateInterface(1)
 
-    log("CLI: re-apply configureForOV2640RAW8 after alt=1 (E0=0x08)")
-    try ov550.configureForOV2640RAW8()
+    // Let AEC/AGC converge.
+    Thread.sleep(forTimeInterval: 1.5)
 
-    log("CLI: dumping key ASIC regs before stream")
-    for reg: UInt16 in [0x0F, 0x1C, 0x35, 0xDA, 0xE0, 0xE5, 0xE7, 0x8C, 0x8D] {
-        if let v = try? transport.readRegister(reg) {
-            log(String(format: "  ASIC 0x%02X = 0x%02X", reg, v))
+    // Dump the raw stream for 5s, then extract the LARGEST PTS-group as our best
+    // partial frame and demosaic it as 2592-wide Bayer.
+    log("CLI: rawIsochDump for 5s")
+    let sizes = NSMutableArray()
+    let dump = try device.rawIsochDump(withDuration: 5.0, packetSizes: sizes)
+    let pktSizes = (sizes as! [NSNumber]).map { $0.intValue }
+    log("CLI: rawIsochDump got \(dump.count) bytes across \(pktSizes.count) microframes")
+
+    // Parse PTS groups and pick the largest.
+    var groups: [(pts: UInt32, fid: UInt8, payload: Data)] = []
+    var curPayload = Data()
+    var curPts: UInt32 = 0
+    var curFid: UInt8 = 0
+    var haveCur = false
+    var off = 0
+    dump.withUnsafeBytes { rawPtr in
+        let bytes = rawPtr.bindMemory(to: UInt8.self).baseAddress!
+        for sz in pktSizes {
+            if sz < 12 { off += sz; continue }
+            let flags = bytes[off + 1]
+            let pts = UInt32(bytes[off+2]) | (UInt32(bytes[off+3]) << 8)
+                    | (UInt32(bytes[off+4]) << 16) | (UInt32(bytes[off+5]) << 24)
+            let fid: UInt8 = flags & 1
+            if !haveCur { curPts = pts; curFid = fid; haveCur = true }
+            if pts != curPts || fid != curFid {
+                groups.append((curPts, curFid, curPayload))
+                curPayload = Data()
+                curPts = pts; curFid = fid
+            }
+            curPayload.append(Data(bytes: bytes + off + 12, count: sz - 12))
+            off += sz
         }
     }
+    if haveCur { groups.append((curPts, curFid, curPayload)) }
+    log("CLI: parsed \(groups.count) PTS groups")
 
-    log("CLI: readFrame (timeout=15s)")
-    let rawData = try device.readFrame(withTimeout: 15.0)
-    log("CLI: got \(rawData.count) bytes raw")
+    guard let biggest = groups.max(by: { $0.payload.count < $1.payload.count }) else {
+        throw NSError(domain: "diascanner", code: 2,
+                      userInfo: [NSLocalizedDescriptionKey: "no PTS group received"])
+    }
+    log(String(format: "CLI: largest group: PTS=0x%08X bytes=%d",
+               biggest.pts, biggest.payload.count))
 
+    // Strip the 4-byte end sentinel (FF 5A A5 01) before treating as image data.
+    var raw = biggest.payload
+    if raw.count >= 4, raw.suffix(4) == Data([0xFF, 0x5A, 0xA5, 0x01]) {
+        raw = raw.prefix(raw.count - 4)
+    }
+
+    // Cleanup: stop streaming before disconnect.
+    try? sensor.stop()
+
+    // Save raw Bayer.
     let rawURL = URL(fileURLWithPath: "\(outputPath).raw")
-    try rawData.write(to: rawURL)
-    log("CLI: raw saved to \(rawURL.path)")
+    try raw.write(to: rawURL)
+    log("CLI: raw Bayer saved to \(rawURL.path)")
 
-    let frameWidth  = ScannerDevice.frameWidth
-    let frameHeight = rawData.count / frameWidth
-    log("CLI: frame \(frameWidth)×\(frameHeight) RAW8 (\(rawData.count) bytes)")
-
-    let trimmedData = rawData.count % frameWidth == 0
-        ? rawData
-        : rawData.prefix(frameHeight * frameWidth)
-
-    let rgb = BayerDemosaic.demosaic(trimmedData, width: frameWidth, height: frameHeight, pattern: .rggb)
-    if let img = BayerDemosaic.nsImage(fromRGB: rgb, width: frameWidth, height: frameHeight),
+    // Demosaic and save PNG. OV5621 outputs BGGR Bayer pattern (SBGGR8).
+    let width  = OV5621Sensor.frameWidth
+    let rowsAvailable = raw.count / width
+    let height = min(OV5621Sensor.frameHeight, rowsAvailable)
+    log("CLI: demosaicing \(width)×\(height) BGGR8")
+    let trimmed = raw.count == width * height ? Data(raw) : Data(raw.prefix(width * height))
+    let rgb = BayerDemosaic.demosaic(trimmed, width: width, height: height, pattern: .bggr)
+    if let img    = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height),
        let tiff   = img.tiffRepresentation,
        let bitmap = NSBitmapImageRep(data: tiff),
        let png    = bitmap.representation(using: .png, properties: [:]) {

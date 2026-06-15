@@ -16,7 +16,7 @@ import DiaScannerUSBBridge
 /// Bridges USBTransport to the Objective-C OVUSBDevice IOKit layer.
 public final class IOKitUSBTransport: USBTransport {
 
-    let device: OVUSBDevice
+    public let device: OVUSBDevice
 
     public init(device: OVUSBDevice) {
         self.device = device

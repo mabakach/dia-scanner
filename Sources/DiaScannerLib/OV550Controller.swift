@@ -42,7 +42,10 @@ public final class OV550Controller {
 
     // ─── Power / Streaming control (from INF CamSet keys) ─────────────
 
-    /// PowerOnCamera: e7=0x3a, e0=0x08
+    /// PowerOnCamera: e7=0x3a (release PWDN), e0=0x08 (blockStream).
+    /// MCLK (E5) is intentionally not written here — it must remain off during
+    /// sensor.initialize() (SCCB writes NACK with MCLK active). MCLK is enabled
+    /// later by configureForOV2640RAW8() before stream start.
     public func powerOn() throws {
         try transport.writeRegister(Register.powerControl, value: 0x3A)
         try transport.writeRegister(Register.usbControl, value: 0x08)

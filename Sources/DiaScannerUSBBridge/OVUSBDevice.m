@@ -363,7 +363,10 @@ static NSError *ovError(OVUSBError code, NSString *description) {
 // Uses IOUSBHostInterface/IOUSBHostPipe instead of the legacy IOUSBInterfaceInterface300.
 // firstFrameNumber=0 requests automatic scheduling on XHCI (avoids bandwidth reservation errors).
 
-- (nullable NSData *)readFrameWithTimeout:(NSTimeInterval)timeout error:(NSError **)error {
+- (nullable NSData *)readFrameWithTimeout:(NSTimeInterval)timeout
+                               frameBytes:(NSUInteger)frameBytes
+                                    error:(NSError **)error {
+    if (frameBytes == 0) frameBytes = NSUIntegerMax;  // EOF-only mode
     if (!_hostIface) {
         if (error) *error = ovError(OVUSBErrorPipeFailed, @"Host interface not open");
         return nil;
@@ -417,8 +420,10 @@ static NSError *ovError(OVUSBError code, NSString *description) {
     IOUSBHostIsochronousTransaction *txList =
         (IOUSBHostIsochronousTransaction *)calloc(kBatch, sizeof(IOUSBHostIsochronousTransaction));
 
-    NSMutableData *accum = [NSMutableData dataWithCapacity:700000];
-    int8_t currentFID = -1;   // -1 = not yet seen first packet
+    NSMutableData *accum = [NSMutableData dataWithCapacity:frameBytes == NSUIntegerMax ? 5000000 : frameBytes];
+    int8_t currentFID = -1;     // -1 = not yet seen first packet
+    uint32_t currentPTS = 0;
+    BOOL haveSeenAFrame = NO;   // becomes YES after the first frame boundary is observed
     NSData *result = nil;
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
     NSUInteger batchIndex = 0;
@@ -435,16 +440,6 @@ static NSError *ovError(OVUSBError code, NSString *description) {
     uint64_t nextFrameNumber = [_hostIface frameNumberWithTime:nil] + 16;
 
     while (!result && [[NSDate date] compare:deadline] == NSOrderedAscending) {
-        // Start streaming (E0=0x00) here, at batch 0, immediately before sendIORequestWithData.
-        // configureForOV2640RAW8 armed C3 and loaded the FIFO with E0=0x08. The E0=0x08→0x00
-        // transition latches the FIFO/PRE config. Moving startStream here (vs. calling it from
-        // main.swift before readFrame) shrinks the race window from ~10ms to ~3ms (one USB
-        // control transfer), so C3 firing at the first VSYNC (~500ms away) is caught by batch 0.
-        if (batchIndex == 0) {
-            [self writeRegister:0xE0 value:0x00 error:nil]; // startStream — latches FIFO/C3
-            nextFrameNumber = [_hostIface frameNumberWithTime:nil] + 16;
-            [self _log:@"startStream (E0=0x00) at batch 0: FIFO/C3 latched, pipe active in <1ms"];
-        }
 
         // Set up transactions: each covers one packet-sized slot in batchBuf
         memset(txList, 0, kBatch * sizeof(IOUSBHostIsochronousTransaction));
@@ -474,7 +469,7 @@ static NSError *ovError(OVUSBError code, NSString *description) {
                 [self _log:[NSString stringWithFormat:@"isoch batch[%zu] fatal kr=0x%08X accum=%zu: %@",
                     (size_t)batchIndex, (uint32_t)kr, accum.length, hostErr]];
                 // If burst already received enough data, return it rather than failing
-                if (accum.length >= 480000) {
+                if (accum.length >= frameBytes / 4) {
                     result = [accum copy];
                 }
                 break;
@@ -504,26 +499,44 @@ static NSError *ovError(OVUSBError code, NSString *description) {
 
             uint8_t fid = flags & 0x01;
             uint8_t eof = (flags >> 1) & 0x01;
+            uint8_t pts_present = (flags >> 2) & 0x01;
             uint8_t err = (flags >> 6) & 0x01;
             if (err) continue;
+            uint32_t pts = 0;
+            if (pts_present && actual >= 6) {
+                pts = ((uint32_t)pkt[5] << 24) | ((uint32_t)pkt[4] << 16)
+                    | ((uint32_t)pkt[3] << 8)  |  (uint32_t)pkt[2];
+            }
 
-            // FID toggle → previous accumulation is one complete frame
-            if (currentFID >= 0 && fid != (uint8_t)currentFID && accum.length > 0) {
+            // Frame boundary: FID toggled OR PTS changed (gspca semantics).
+            BOOL frameBoundary = (currentFID >= 0)
+                && (fid != (uint8_t)currentFID
+                    || (pts_present && pts != currentPTS));
+            if (frameBoundary) {
+                if (haveSeenAFrame && accum.length > 0) {
+                    [self _log:[NSString stringWithFormat:
+                        @"frame boundary batch[%zu] pkt[%zu]: %zu bytes (fid %d→%u, pts %u→%u)",
+                        (size_t)batchIndex, i, accum.length, currentFID, fid, currentPTS, pts]];
+                    result = [accum copy];
+                    break;
+                }
+                // First-ever boundary: discard partial accumulator (we started mid-frame)
+                // and begin accumulating the next clean frame from this packet.
                 [self _log:[NSString stringWithFormat:
-                    @"isoch FID toggle batch[%zu] pkt[%zu]: %zu bytes → frame done",
-                    (size_t)batchIndex, i, accum.length]];
-                result = [accum copy];
-                break;
+                    @"first frame boundary, discarding %zu bytes of partial frame",
+                    accum.length]];
+                [accum setLength:0];
+                haveSeenAFrame = YES;
             }
             currentFID = fid;
+            if (pts_present) currentPTS = pts;
 
             uint32_t payloadLen = actual - hlen;
             if (payloadLen > 0) {
-                // Cap at exactly one frame (1600×1200 RAW8 = 1,920,000 bytes)
-                NSUInteger remaining = 1920000 - accum.length;
+                NSUInteger remaining = accum.length < frameBytes ? frameBytes - accum.length : 0;
                 NSUInteger toAppend = payloadLen < remaining ? payloadLen : remaining;
-                [accum appendBytes:pkt + hlen length:toAppend];
-                if (accum.length >= 1920000) {
+                if (toAppend > 0) [accum appendBytes:pkt + hlen length:toAppend];
+                if (haveSeenAFrame && accum.length >= frameBytes) {
                     [self _log:[NSString stringWithFormat:
                         @"isoch full frame (%zu bytes) at batch[%zu] pkt[%zu]",
                         accum.length, (size_t)batchIndex, i]];
@@ -533,7 +546,7 @@ static NSError *ovError(OVUSBError code, NSString *description) {
             }
 
             // EOF bit: end of this frame
-            if (eof && accum.length > 0) {
+            if (eof && haveSeenAFrame && accum.length > 0) {
                 [self _log:[NSString stringWithFormat:
                     @"isoch EOF bit batch[%zu] pkt[%zu]: %zu bytes → frame done",
                     (size_t)batchIndex, i, accum.length]];
@@ -546,12 +559,16 @@ static NSError *ovError(OVUSBError code, NSString *description) {
         // One burst per C3 arm: the OV550 flushes its FIFO in one dense burst per VSYNC.
         // Return on: (a) dense→sparse transition, or (b) enough data for a full frame.
         BOOL thisBatchDense = (nonEmpty > 10);
-        if (!result && accum.length >= 1900000) {
+        // Near-full safety net: if we've collected ≥99% of frameBytes, return.
+        if (!result && frameBytes != NSUIntegerMax && accum.length >= (frameBytes * 99) / 100) {
             [self _log:[NSString stringWithFormat:
                 @"frame size reached: returning %zu bytes", accum.length]];
             result = [accum copy];
         }
-        if (!result && prevBatchDense && !thisBatchDense && accum.length > 0) {
+        // Dense→sparse heuristic only fires in EOF-only mode (frameBytes==0/MAX),
+        // since a real frame size cap is the more reliable signal.
+        if (!result && frameBytes == NSUIntegerMax
+            && prevBatchDense && !thisBatchDense && accum.length > 0) {
             [self _log:[NSString stringWithFormat:
                 @"dense→sparse: burst complete, returning %zu bytes", accum.length]];
             result = [accum copy];
@@ -597,6 +614,123 @@ static NSError *ovError(OVUSBError code, NSString *description) {
         *error = ovError(OVUSBErrorTimeout, @"Frame read timeout (isoch)");
     }
     return result;
+}
+
+- (nullable NSData *)rawIsochDumpWithDuration:(NSTimeInterval)duration
+                                  packetSizes:(NSMutableArray<NSNumber *> *)packetSizes
+                                        error:(NSError **)error {
+    if (!_hostIface) {
+        if (error) *error = ovError(OVUSBErrorPipeFailed, @"Host interface not open");
+        return nil;
+    }
+    NSError *hostErr = nil;
+    IOUSBHostPipe *pipe = [_hostIface copyPipeWithAddress:OV550_ISOCH_IN_ADDR error:&hostErr];
+    if (!pipe) {
+        if (error) *error = hostErr ?: ovError(OVUSBErrorPipeFailed, @"copyPipeWithAddress:0x81 failed");
+        return nil;
+    }
+
+    // Multiple URBs in flight via async enqueue API — same pattern as Linux gspca.
+    // The synchronous send blocks while data continues to stream, so we'd miss most
+    // microframes between batches. With N in-flight URBs the host controller always
+    // has somewhere to write next.
+    const uint32_t kPktSize = 3060;
+    const NSUInteger kBatch = 256;   // 32 USB frames / batch = 32 ms; small enough to overlap
+    const NSUInteger kInFlight = 8;
+    const uint64_t kBatchUSBFrames = 32;
+
+    NSMutableArray<NSMutableData *> *batchBufs = [NSMutableArray arrayWithCapacity:kInFlight];
+    IOUSBHostIsochronousTransaction **txLists =
+        (IOUSBHostIsochronousTransaction **)calloc(kInFlight, sizeof(IOUSBHostIsochronousTransaction *));
+    for (NSUInteger i = 0; i < kInFlight; i++) {
+        [batchBufs addObject:[NSMutableData dataWithLength:(size_t)kBatch * kPktSize]];
+        txLists[i] = (IOUSBHostIsochronousTransaction *)
+            calloc(kBatch, sizeof(IOUSBHostIsochronousTransaction));
+    }
+
+    NSMutableData *out = [NSMutableData dataWithCapacity:30 * 1024 * 1024];
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:duration];
+
+    __block uint64_t nextFrameNumber = [_hostIface frameNumberWithTime:nil] + 16;
+    __block NSUInteger inFlight = 0;
+    __block NSUInteger submitCount = 0;
+    __block BOOL stopping = NO;
+
+    dispatch_semaphore_t allDone = dispatch_semaphore_create(0);
+
+    // Submit one batch (called both initially and recursively from the completion
+    // handler). Completion handlers run serially on _isochQueue, so no locking needed.
+    __block __weak void (^weakSubmit)(NSUInteger);
+    void (^submit)(NSUInteger) = ^(NSUInteger idx) {
+        memset(txLists[idx], 0, kBatch * sizeof(IOUSBHostIsochronousTransaction));
+        for (NSUInteger i = 0; i < kBatch; i++) {
+            txLists[idx][i].requestCount = kPktSize;
+            txLists[idx][i].offset       = (uint32_t)(i * kPktSize);
+        }
+        uint64_t fn = nextFrameNumber;
+        nextFrameNumber += kBatchUSBFrames;
+        uint64_t nowFrame = [self->_hostIface frameNumberWithTime:nil];
+        if (fn < nowFrame + 4) fn = nowFrame + 4;
+        if (nextFrameNumber < fn + kBatchUSBFrames) nextFrameNumber = fn + kBatchUSBFrames;
+
+        NSError *enqErr = nil;
+        NSUInteger thisSubmit = submitCount++;
+        BOOL ok = [pipe enqueueIORequestWithData:batchBufs[idx]
+                                 transactionList:txLists[idx]
+                            transactionListCount:kBatch
+                                firstFrameNumber:fn
+                                         options:0
+                                           error:&enqErr
+                               completionHandler:^(IOReturn status,
+                                                   IOUSBHostIsochronousTransaction * __unused t) {
+            const uint8_t *bytes = (const uint8_t *)[batchBufs[idx] bytes];
+            NSUInteger nonEmpty = 0;
+            for (NSUInteger i = 0; i < kBatch; i++) {
+                uint32_t actual = txLists[idx][i].completeCount;
+                if (packetSizes) [packetSizes addObject:@(actual)];
+                if (actual == 0) continue;
+                nonEmpty++;
+                [out appendBytes:bytes + i * kPktSize length:actual];
+            }
+            if (thisSubmit < 4 || (thisSubmit % 16 == 0)) {
+                [self _log:[NSString stringWithFormat:
+                    @"rawIsoch batch[%zu] slot[%zu] status=0x%08X nonEmpty=%zu out=%zu",
+                    thisSubmit, idx, (uint32_t)status, nonEmpty, (size_t)out.length]];
+            }
+            // Re-submit if we still have time, otherwise signal completion.
+            if (!stopping && [[NSDate date] compare:deadline] == NSOrderedAscending) {
+                if (weakSubmit) weakSubmit(idx);
+            } else {
+                inFlight--;
+                if (inFlight == 0) dispatch_semaphore_signal(allDone);
+            }
+        }];
+        if (!ok && enqErr) {
+            [self _log:[NSString stringWithFormat:@"enqueue slot[%zu] failed: %@", idx, enqErr]];
+            inFlight--;
+            if (inFlight == 0) dispatch_semaphore_signal(allDone);
+        }
+    };
+    weakSubmit = submit;
+
+    // Prime the pipeline with kInFlight batches.
+    for (NSUInteger i = 0; i < kInFlight; i++) {
+        inFlight++;
+        submit(i);
+    }
+
+    // Hard timeout: duration plus a generous safety margin so we don't hang forever.
+    dispatch_semaphore_wait(allDone,
+        dispatch_time(DISPATCH_TIME_NOW, (int64_t)((duration + 2.0) * NSEC_PER_SEC)));
+    stopping = YES;
+
+    for (NSUInteger i = 0; i < kInFlight; i++) free(txLists[i]);
+    free(txLists);
+    [pipe abortWithError:nil];
+    pipe = nil;
+    [self _log:[NSString stringWithFormat:@"rawIsoch done: %zu submits, %zu bytes",
+                submitCount, (size_t)out.length]];
+    return out;
 }
 
 - (nullable NSData *)readBulkData:(NSUInteger)length timeout:(NSTimeInterval)timeout error:(NSError **)error {

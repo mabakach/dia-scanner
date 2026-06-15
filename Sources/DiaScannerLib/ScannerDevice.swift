@@ -137,7 +137,7 @@ public final class ScannerDevice: ObservableObject {
             Self.log("captureFrame: readFrame…")
 
             let rawData: Data = try await Task.detached(priority: .userInitiated) {
-                try device.readFrame(withTimeout: 10.0)
+                try device.readFrame(withTimeout: 30.0, frameBytes: UInt(OV5621Sensor.frameBytes))
             }.value
 
             Self.log("captureFrame: got \(rawData.count) bytes raw")

@@ -75,7 +75,19 @@ extern NSErrorDomain const OVUSBErrorDomain;
 - (BOOL)setAlternateInterface:(uint8_t)altSetting error:(NSError *__autoreleasing *)error;
 
 /// Reads one complete RAW8 frame from the isochronous IN pipe.
-- (nullable NSData *)readFrameWithTimeout:(NSTimeInterval)timeout error:(NSError *__autoreleasing *)error;
+/// `frameBytes` is the expected payload size — used as the hard cap to detect a
+/// full frame independent of EOF. Pass 0 to rely solely on FID/EOF markers.
+- (nullable NSData *)readFrameWithTimeout:(NSTimeInterval)timeout
+                               frameBytes:(NSUInteger)frameBytes
+                                    error:(NSError *__autoreleasing *)error;
+
+/// Streams raw isochronous data (including UVC-style headers) for `duration` seconds.
+/// Returns a single buffer with each captured microframe's actual data concatenated.
+/// Each entry in `packetSizes` is the byte count for the corresponding microframe.
+/// Intended for diagnostic dumps — not used in the normal capture path.
+- (nullable NSData *)rawIsochDumpWithDuration:(NSTimeInterval)duration
+                                  packetSizes:(NSMutableArray<NSNumber *> *_Nullable)packetSizes
+                                        error:(NSError *__autoreleasing *)error;
 
 /// Reads from the bulk IN endpoint.
 - (nullable NSData *)readBulkData:(NSUInteger)length timeout:(NSTimeInterval)timeout error:(NSError *__autoreleasing *)error;

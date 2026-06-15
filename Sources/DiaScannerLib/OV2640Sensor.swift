@@ -45,10 +45,14 @@ public final class OV2640Sensor {
     /// with strip-fix values from Linux ov2640.c applied to regs 0x35/0x22/0x37/0x06/0x0E.
     /// COM3 (0x0C) is intentionally absent — writing it causes severe frame truncation.
     public func initialize() throws {
-        // Soft reset
-        try transport.writeSensorRegister(0xFF, value: 0x01)
-        try transport.writeSensorRegister(0x12, value: 0x80)
-        try Thread.sleep(forTimeInterval: 0.002)
+        // Soft reset. Bank-select may NACK if SCCB stuck from a prior failed run;
+        // the soft-reset write itself NACKs because the sensor begins resetting
+        // before sending ACK. Tolerate both and let the post-reset preamble be
+        // the real connectivity check.
+        try? transport.writeSensorRegister(0xFF, value: 0x01)
+        try? transport.writeSensorRegister(0x12, value: 0x80)
+        Thread.sleep(forTimeInterval: 0.020)
+        (transport as? IOKitUSBTransport)?.device.clearSCCBStatus()
 
         // DSP bank preamble (required immediately after reset)
         try transport.writeSensorRegister(0xFF, value: 0x00)
@@ -207,13 +211,13 @@ public final class OV2640Sensor {
             0x5C, 0x05, 0xFF,
             0xC3, 0xED, 0xFF,
             0x7F, 0x00, 0xFF,
-            // RAW8 bypass format
-            0xDA, 0x04, 0xFF,   // IMAGE_MODE = RAW
+            // RAW8 DSP output (R_BYPASS=0 → DSP handles windowing → clean 1600×1200)
+            0xDA, 0x04, 0xFF,   // IMAGE_MODE = RAW8 through DSP
             0xE5, 0x1F, 0xFF,
             0xE1, 0x77, 0xFF,
             0xE0, 0x00, 0xFF,
             0xDD, 0xFF, 0xFF,   // INV vsync polarity for OV550 framing
-            0x05, 0x01, 0xFF,   // R_BYPASS = DSP_BYPAS → RAW8 on DVP
+            0x05, 0x00, 0xFF,   // R_BYPASS = 0 → DSP active, proper 1600×1200 windowing
         ]
         try applySensorTriplets(Data(initBytes))
     }
@@ -223,7 +227,20 @@ public final class OV2640Sensor {
     public func applyFrameRate1() throws {
         try transport.writeSensorRegister(0xFF, value: 0x01)  // sensor bank
         try transport.writeSensorRegister(0x11, value: 0x07)  // CLKRC: divide by 8
-        try transport.writeSensorRegister(0x04, value: 0x33)  // REG04 (from apollo2640.set)
+        try transport.writeSensorRegister(0x04, value: 0x30)  // REG04: clear exposure LSBs
+        try transport.writeSensorRegister(0xFF, value: 0x00)  // back to DSP bank
+    }
+
+    /// Sets manual minimum exposure for slide scanning.
+    /// Disables AEC/AGC/banding-filter, sets gain=1x, and programs a short
+    /// integration time so dense slide areas are not saturated.
+    /// aech: 8-bit exposure middle word (row periods × 4); start low, increase if too dark.
+    public func applyManualExposure(aech: UInt8 = 4) throws {
+        try transport.writeSensorRegister(0xFF, value: 0x01)  // sensor bank
+        try transport.writeSensorRegister(0x13, value: 0xC0)  // disable AEC(0), AGC(2), banding(5)
+        try transport.writeSensorRegister(0x00, value: 0x00)  // GAIN = 1× (minimum)
+        try transport.writeSensorRegister(0x45, value: 0x00)  // exposure[13:8] = 0
+        try transport.writeSensorRegister(0x10, value: aech)  // AECH = exposure middle byte
         try transport.writeSensorRegister(0xFF, value: 0x00)  // back to DSP bank
     }
 
@@ -258,7 +275,7 @@ public final class OV2640Sensor {
 
             // Small delay after soft reset
             if reg == Reg.reset && (value & 0x80) != 0 {
-                try Thread.sleep(forTimeInterval: 0.002)
+                Thread.sleep(forTimeInterval: 0.002)
             }
         }
     }
