@@ -10,12 +10,12 @@ import AppKit
 import DiaScannerUSBBridge
 
 /// High-level API for the PX-2130 slide scanner.
-/// Coordinates the OV550 bridge chip, OV2640 sensor, and frame capture pipeline.
+/// Coordinates the OV550 bridge chip, OV5621 sensor, and frame capture pipeline.
 @MainActor
 public final class ScannerDevice: ObservableObject {
 
-    public static let frameWidth  = 1600
-    public static let frameHeight = 1200
+    public static let frameWidth  = OV5621Sensor.frameWidth
+    public static let frameHeight = OV5621Sensor.frameHeight
 
     @Published public var isConnected   = false
     @Published public var isBusy        = false
@@ -24,12 +24,11 @@ public final class ScannerDevice: ObservableObject {
 
     private var usbDevice: OVUSBDevice?
     private var transport: IOKitUSBTransport?
-    private var ov550:    OV550Controller?
-    private var ov2640:   OV2640Sensor?
+    private var ov5621:    OV5621Sensor?
 
     public init() {}
 
-    // ─── Connect / Disconnect ──────────────────────────────────────
+    // ─── Logging ───────────────────────────────────────────────────
 
     private static func log(_ msg: String) {
         let line = "\(Date()): \(msg)\n"
@@ -43,6 +42,8 @@ public final class ScannerDevice: ObservableObject {
         }
     }
 
+    // ─── Connect / Disconnect ──────────────────────────────────────
+
     public func connect() async {
         Self.log("connect() called")
         isBusy = true
@@ -51,49 +52,38 @@ public final class ScannerDevice: ObservableObject {
 
         let device = OVUSBDevice()
         do {
-            Self.log("calling connectScanner()")
+            Self.log("connectScanner()")
             try device.connectScanner()
-            Self.log("connectScanner() succeeded")
         } catch {
-            Self.log("connectScanner() FAILED: \(error)")
+            Self.log("connectScanner FAILED: \(error)")
             lastError = error.localizedDescription
             return
         }
 
         let xport  = IOKitUSBTransport(device: device)
-        let ctrl   = OV550Controller(transport: xport)
-        let sensor = OV2640Sensor(transport: xport)
+        let sensor = OV5621Sensor(transport: xport)
 
         do {
-            Self.log("powerOn…")
-            try ctrl.powerOn()
-            try await Task.sleep(nanoseconds: 500_000_000)  // 500ms — MCLK/sensor power stabilisation
-            Self.log("setLED…")
-            try ctrl.setLED(on: true)
-            Self.log("configureUSB…")
-            try ctrl.configureForOV2640RAW8()
-            try await Task.sleep(nanoseconds: 1_000_000_000)  // 1s — MCLK to OV2640 must stabilise before SCCB
-            Self.log("probing SCCB ACK…")
-            device.probeI2CBridge()
-            Self.log("SCCB probe done")
-
-            Self.log("verifyChipID…")
-            let validID = try sensor.verifyChipID()
-            Self.log("chipID valid=\(validID)")
-            if !validID {
-                lastError = "Sensor chip ID mismatch — is this the correct scanner?"
-                device.disconnectScanner()
-                return
+            Self.log("detecting sensor…")
+            let id = try sensor.detect()
+            Self.log(String(format: "sensor_id=0x%04X", id))
+            guard (id & 0xFFF0) == 0x5620 else {
+                throw NSError(domain: "diascanner", code: 1, userInfo: [
+                    NSLocalizedDescriptionKey: String(format: "Expected OV5621 (0x562X), got 0x%04X", id)
+                ])
             }
 
-            Self.log("initialize sensor…")
-            try sensor.initialize()
-            Self.log("sensor init done")
+            Self.log("applying bridge+sensor init…")
+            try sensor.initializeAndStart()
+            Self.log("setAlternateInterface(1)")
+            try device.setAlternateInterface(1)
 
-            usbDevice = device
-            transport = xport
-            ov550     = ctrl
-            ov2640    = sensor
+            // Let AEC/AGC converge before the first capture.
+            try await Task.sleep(nanoseconds: 1_500_000_000)
+
+            usbDevice   = device
+            transport   = xport
+            ov5621      = sensor
             isConnected = true
             Self.log("connected!")
         } catch {
@@ -104,18 +94,18 @@ public final class ScannerDevice: ObservableObject {
     }
 
     public func disconnect() {
+        try? ov5621?.stop()
         usbDevice?.disconnectScanner()
         usbDevice   = nil
         transport   = nil
-        ov550       = nil
-        ov2640      = nil
+        ov5621      = nil
         isConnected = false
     }
 
     // ─── Capture ───────────────────────────────────────────────────
 
     public func captureFrame() async {
-        guard isConnected, let device = usbDevice, let ctrl = ov550, let sensor = ov2640 else {
+        guard isConnected, let device = usbDevice else {
             lastError = "Scanner not connected"
             return
         }
@@ -124,38 +114,76 @@ public final class ScannerDevice: ObservableObject {
         defer { isBusy = false }
 
         do {
-            Self.log("captureFrame: applyFrameRate1…")
-            try sensor.applyFrameRate1()
-            Self.log("captureFrame: startStream…")
-            try ctrl.startStream()
-            try await Task.sleep(nanoseconds: 200_000_000)  // 200ms — sensor stabilisation
-            Self.log("captureFrame: readFrame…")
-
+            Self.log("captureFrame: rawIsochDump 5s…")
             let rawData: Data = try await Task.detached(priority: .userInitiated) {
-                try device.readFrame(withTimeout: 30.0, frameBytes: UInt(OV5621Sensor.frameBytes))
+                try Self.captureOneFrame(device: device)
             }.value
 
-            Self.log("captureFrame: got \(rawData.count) bytes raw")
-            try? ctrl.blockStream()
-            try? ctrl.setLED(on: false)
+            Self.log("captureFrame: got \(rawData.count) bytes — demosaicing…")
+            let width  = OV5621Sensor.frameWidth
+            let rows   = rawData.count / width
+            let height = min(OV5621Sensor.frameHeight, rows)
+            let trimmed = rawData.count == width * height
+                ? rawData
+                : Data(rawData.prefix(width * height))
 
-            let rgb = BayerDemosaic.demosaic(rawData,
-                                             width:   ScannerDevice.frameWidth,
-                                             height:  ScannerDevice.frameHeight,
-                                             pattern: .rggb)
-            if let image = BayerDemosaic.nsImage(fromRGB: rgb,
-                                                 width:   ScannerDevice.frameWidth,
-                                                 height:  ScannerDevice.frameHeight) {
-                Self.log("captureFrame: image created \(Int(image.size.width))x\(Int(image.size.height))")
+            let rgb = BayerDemosaic.demosaic(trimmed, width: width, height: height, pattern: .bggr)
+            if let image = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height) {
+                Self.log("captureFrame: image \(Int(image.size.width))×\(Int(image.size.height))")
                 capturedImage = image
             } else {
                 lastError = "Failed to create image from raw frame data"
             }
         } catch {
-            Self.log("captureFrame: FAILED: \(error)")
-            try? ctrl.blockStream()
+            Self.log("captureFrame FAILED: \(error)")
             lastError = error.localizedDescription
         }
+    }
+
+    /// Blocking helper — runs on a detached task. Dumps the isoch stream for 5 s,
+    /// parses PTS groups, and returns the payload of the largest (best) group.
+    private static nonisolated func captureOneFrame(device: OVUSBDevice) throws -> Data {
+        let sizes = NSMutableArray()
+        let dump  = try device.rawIsochDump(withDuration: 5.0, packetSizes: sizes)
+        let pktSizes = (sizes as! [NSNumber]).map { $0.intValue }
+
+        var groups: [(pts: UInt32, fid: UInt8, payload: Data)] = []
+        var curPayload = Data()
+        var curPts: UInt32 = 0
+        var curFid: UInt8  = 0
+        var haveCur = false
+        var off = 0
+
+        dump.withUnsafeBytes { rawPtr in
+            let bytes = rawPtr.bindMemory(to: UInt8.self).baseAddress!
+            for sz in pktSizes {
+                if sz < 12 { off += sz; continue }
+                let flags = bytes[off + 1]
+                let pts = UInt32(bytes[off+2]) | (UInt32(bytes[off+3]) << 8)
+                        | (UInt32(bytes[off+4]) << 16) | (UInt32(bytes[off+5]) << 24)
+                let fid: UInt8 = flags & 1
+                if !haveCur { curPts = pts; curFid = fid; haveCur = true }
+                if pts != curPts || fid != curFid {
+                    groups.append((curPts, curFid, curPayload))
+                    curPayload = Data()
+                    curPts = pts; curFid = fid
+                }
+                curPayload.append(Data(bytes: bytes + off + 12, count: sz - 12))
+                off += sz
+            }
+        }
+        if haveCur { groups.append((curPts, curFid, curPayload)) }
+
+        guard let biggest = groups.max(by: { $0.payload.count < $1.payload.count }) else {
+            throw NSError(domain: "diascanner", code: 2,
+                          userInfo: [NSLocalizedDescriptionKey: "No frame data received"])
+        }
+
+        var raw = biggest.payload
+        if raw.count >= 4, raw.suffix(4) == Data([0xFF, 0x5A, 0xA5, 0x01]) {
+            raw = raw.prefix(raw.count - 4)
+        }
+        return Data(raw)
     }
 
     // ─── Save ──────────────────────────────────────────────────────
