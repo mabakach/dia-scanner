@@ -105,6 +105,11 @@ struct ContentView: View {
                         Text("Working…")
                             .foregroundStyle(.secondary)
                     }
+                } else if let frame = scanner.liveFrame {
+                    Image(nsImage: frame)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .padding(8)
                 } else if let img = scanner.capturedImage {
                     Image(nsImage: img)
                         .resizable()
