@@ -94,4 +94,3 @@ This project incorporates code derived from:
 
 - [Linux gspca_ov534_9 driver](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/media/usb/gspca/ov534_9.c)
 - OV5621 sensor datasheet (not publicly available; register sequences taken from the Linux driver)
-- `manual/PX-2130 Diascanner - GERMAN Bildschirm.pdf` — original German user manual
