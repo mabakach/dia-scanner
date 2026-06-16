@@ -29,8 +29,8 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         OTHER_LDFLAGS: "-framework IOKit -framework CoreFoundation -framework IOUSBHost"
         DEFINES_MODULE: YES
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 5989NN7MH5
 
   DiaScannerLib:
     type: framework
@@ -54,8 +54,8 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         DEFINES_MODULE: YES
         FRAMEWORK_SEARCH_PATHS: $(inherited) $(BUILT_PRODUCTS_DIR)
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 5989NN7MH5
 
   DiaScanner:
     type: application
@@ -86,8 +86,8 @@ targets:
         SWIFT_VERSION: 6.0
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         PRODUCT_BUNDLE_IDENTIFIER: ch.mabaka.DiaScanner
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 5989NN7MH5
         FRAMEWORK_SEARCH_PATHS: $(inherited) $(BUILT_PRODUCTS_DIR)
 
   DiaScannerCLI:
