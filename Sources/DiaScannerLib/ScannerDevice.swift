@@ -23,11 +23,10 @@ public final class ScannerDevice: ObservableObject {
     @Published public var capturedImage: NSImage?
     @Published public var liveFrame:     NSImage?
 
-    private var usbDevice:          OVUSBDevice?
-    private var transport:          IOKitUSBTransport?
-    private var ov5621:             OV5621Sensor?
-    private var streamContinuation: AsyncStream<Data>.Continuation?
-    private var streamTask:         Task<Void, Never>?
+    private var usbDevice:  OVUSBDevice?
+    private var transport:  IOKitUSBTransport?
+    private var ov5621:     OV5621Sensor?
+    private var streamTask: Task<Void, Never>?
 
     public init() {}
 
@@ -100,9 +99,7 @@ public final class ScannerDevice: ObservableObject {
     public func disconnect() async {
         isConnected = false
         liveFrame   = nil
-        // End the stream so the consumer task exits its for-await loop.
-        streamContinuation?.finish()
-        streamContinuation = nil
+        // Cancelling the consumer task ends the AsyncStream for-await loop automatically.
         streamTask?.cancel()
         streamTask = nil
         // Stop USB on a background thread — stopStreaming blocks up to 3 s.
@@ -124,27 +121,22 @@ public final class ScannerDevice: ObservableObject {
         let height   = OV5621Sensor.frameHeight
         let expected = UInt(OV5621Sensor.frameBytes)
 
-        // Use AsyncStream as a bridge: the ObjC handler only captures 'continuation'
-        // (Sendable), satisfying Swift's 'sending' requirement without touching any
-        // main-actor-isolated state from the isoch callback queue.
-        // bufferingNewest(1) drops stale frames when demosaic can't keep up.
-        let (stream, continuation) = AsyncStream.makeStream(
-            of: Data.self,
-            bufferingPolicy: .bufferingNewest(1)
-        )
-        streamContinuation = continuation
-
+        // Stream and continuation are created in a nonisolated context so they are
+        // never in the main actor's region. Only the Sendable AsyncStream crosses
+        // back to the main actor. The continuation stays nonisolated for its lifetime,
+        // making the ObjC 'sending' handler closure trivially region-safe.
+        let stream: AsyncStream<Data>
         do {
-            try Self.installFrameHandler(on: device, frameBytes: expected, continuation: continuation)
+            stream = try Self.beginStreaming(on: device, frameBytes: expected)
         } catch {
-            continuation.finish()
-            streamContinuation = nil
             Self.log("startStreaming failed: \(error)")
             lastError = error.localizedDescription
             return
         }
 
         // Consume frames on the main actor; demosaic runs in a detached task.
+        // bufferingNewest(1) (set in beginStreaming) drops stale frames when
+        // demosaic can't keep up. Task cancellation ends the for-await loop.
         streamTask = Task {
             for await rawData in stream {
                 let image: NSImage? = await Task.detached(priority: .userInitiated) {
@@ -162,16 +154,22 @@ public final class ScannerDevice: ObservableObject {
         }
     }
 
-    // Creates the ObjC frame handler in a nonisolated context so its closure
-    // is outside the main actor's region and can be passed as a 'sending' parameter.
-    private static nonisolated func installFrameHandler(
+    // Both AsyncStream and its continuation are created here, in a nonisolated
+    // context. The continuation is captured by the frame handler closure and never
+    // touches the main actor's region, so it can be passed as a 'sending' parameter
+    // to the ObjC startStreaming method without a region-isolation error.
+    private static nonisolated func beginStreaming(
         on device: OVUSBDevice,
-        frameBytes: UInt,
-        continuation: AsyncStream<Data>.Continuation
-    ) throws {
+        frameBytes: UInt
+    ) throws -> AsyncStream<Data> {
+        let (stream, continuation) = AsyncStream.makeStream(
+            of: Data.self,
+            bufferingPolicy: .bufferingNewest(1)
+        )
         try device.startStreaming(withFrameBytes: frameBytes) { rawData in
             continuation.yield(rawData)
         }
+        return stream
     }
 
     // ─── Capture ───────────────────────────────────────────────────
