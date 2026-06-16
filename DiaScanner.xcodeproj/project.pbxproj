@@ -1,0 +1,778 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		17086761AB4AE102BED7BCBA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78F3CD42DCB40854A4CF0BDB /* ContentView.swift */; };
+		1B43BB976247CF85336E8B59 /* DiaScannerUSBBridge.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		3AC632B2E6601FE84B569029 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B12285B1CE3B799700F4ED /* main.swift */; };
+		3F1C6A1CC6F76E5DF93ECBA5 /* DiaScannerUSBBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; };
+		4DAAC8D42CF53A85B482054D /* OVUSBDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 665B91C9C3AC47024DA135A7 /* OVUSBDevice.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5943A6C3F2377DE6D9ED90C3 /* OV5621Sensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28772CF5165F4DAEEC105F22 /* OV5621Sensor.swift */; };
+		5C6EC8DB7287D2B28F55C68C /* DiaScannerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D256FB09928DD4C8BBE25A /* DiaScannerApp.swift */; };
+		5D790B2DED0A51D150050EFB /* OV2640Sensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */; };
+		61661CCF95462A092BCA0C84 /* FrameParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD64D5E149B08FB955F288C /* FrameParser.swift */; };
+		695331B7AAB8C503A5945498 /* DiaScannerUSBBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; };
+		6E1C8FE51E2048CEEC4DA510 /* DiaScannerLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		75C6A053B51F4B6B4BC5413D /* USBTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0F908EEE6F8108FF8A0FD5 /* USBTransport.swift */; };
+		87036B952468B91B124043EF /* BayerDemosaic.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7D87F3B45F90E06FA8AC70 /* BayerDemosaic.swift */; };
+		B8F990BE77FE10D07A5393CC /* DiaScannerLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; };
+		BE4191F6E73D8C1652C1F0EB /* OVUSBDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 32F17F0D8B1F3A8CE552FE26 /* OVUSBDevice.m */; };
+		C047A577686F87724BEDA90F /* DiaScannerUSBBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; };
+		C160B564E876B06D1F88E6C1 /* DiaScannerLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; };
+		C9EEE1C6CFB7F6CD68E72ED9 /* OV550Controller.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */; };
+		D4E93FB72DAB7A8324B74405 /* ScannerDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20A0C5B9FDDFBF52DD75FB9 /* ScannerDevice.swift */; };
+		D9677F56A5336796D8E3D1C6 /* IOKitUSBTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */; };
+		DE37B9B6B572AF3E8EA0F6B8 /* DiaScannerUSBBridge.h in Headers */ = {isa = PBXBuildFile; fileRef = D76187445B1E91FA13C2958D /* DiaScannerUSBBridge.h */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1F2A74530B2215857B63A466 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0360617EEBEEA24B60A4AE3F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FB64F0691E7445E93D624DDF;
+			remoteInfo = DiaScannerLib;
+		};
+		578B5F44684270821C939B87 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0360617EEBEEA24B60A4AE3F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 817BA2CFA4EC835E4A7BD616;
+			remoteInfo = DiaScannerUSBBridge;
+		};
+		6C20B7020F9B681BC374ED52 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0360617EEBEEA24B60A4AE3F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FB64F0691E7445E93D624DDF;
+			remoteInfo = DiaScannerLib;
+		};
+		BCC524EF8C47BDE1C3C4E105 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0360617EEBEEA24B60A4AE3F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 817BA2CFA4EC835E4A7BD616;
+			remoteInfo = DiaScannerUSBBridge;
+		};
+		E2FA1BDB6752FC4CA3F6F6D7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0360617EEBEEA24B60A4AE3F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 817BA2CFA4EC835E4A7BD616;
+			remoteInfo = DiaScannerUSBBridge;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FAE4A1F2FC2FB092B935DBD0 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				6E1C8FE51E2048CEEC4DA510 /* DiaScannerLib.framework in Embed Frameworks */,
+				1B43BB976247CF85336E8B59 /* DiaScannerUSBBridge.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		28772CF5165F4DAEEC105F22 /* OV5621Sensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV5621Sensor.swift; sourceTree = "<group>"; };
+		32F17F0D8B1F3A8CE552FE26 /* OVUSBDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OVUSBDevice.m; sourceTree = "<group>"; };
+		53B12285B1CE3B799700F4ED /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		665B91C9C3AC47024DA135A7 /* OVUSBDevice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OVUSBDevice.h; sourceTree = "<group>"; };
+		6EBC27D8B31BF46D1F66F885 /* DiaScannerCLI */ = {isa = PBXFileReference; includeInIndex = 0; path = DiaScannerCLI; sourceTree = BUILT_PRODUCTS_DIR; };
+		72C2A9483D5D31BADC6B292B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		730F52999DC9033C031FDB76 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		78F3CD42DCB40854A4CF0BDB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		88DE7040ECAC826F57315125 /* DiaScannerLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DiaScannerLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DiaScannerUSBBridge.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20A0C5B9FDDFBF52DD75FB9 /* ScannerDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerDevice.swift; sourceTree = "<group>"; };
+		A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV550Controller.swift; sourceTree = "<group>"; };
+		A8D256FB09928DD4C8BBE25A /* DiaScannerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaScannerApp.swift; sourceTree = "<group>"; };
+		BCD64D5E149B08FB955F288C /* FrameParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameParser.swift; sourceTree = "<group>"; };
+		C397CC311CA9A0673507C997 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D76187445B1E91FA13C2958D /* DiaScannerUSBBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DiaScannerUSBBridge.h; sourceTree = "<group>"; };
+		E137F6D10BA2FE6847EDABBC /* DiaScanner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiaScanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOKitUSBTransport.swift; sourceTree = "<group>"; };
+		EB7D87F3B45F90E06FA8AC70 /* BayerDemosaic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BayerDemosaic.swift; sourceTree = "<group>"; };
+		EF0F908EEE6F8108FF8A0FD5 /* USBTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBTransport.swift; sourceTree = "<group>"; };
+		F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV2640Sensor.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5DE86CADD2AC4B7582926DFB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B8F990BE77FE10D07A5393CC /* DiaScannerLib.framework in Frameworks */,
+				C047A577686F87724BEDA90F /* DiaScannerUSBBridge.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8D2708848DD9C35F39714D83 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C160B564E876B06D1F88E6C1 /* DiaScannerLib.framework in Frameworks */,
+				695331B7AAB8C503A5945498 /* DiaScannerUSBBridge.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B01086E5A7ACABDD639A924C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3F1C6A1CC6F76E5DF93ECBA5 /* DiaScannerUSBBridge.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		298A2D105CCF01576930B12D /* DiaScannerCLI */ = {
+			isa = PBXGroup;
+			children = (
+				53B12285B1CE3B799700F4ED /* main.swift */,
+			);
+			path = DiaScannerCLI;
+			sourceTree = "<group>";
+		};
+		3D4AE874214652419D6780B4 /* DiaScannerUSBBridge */ = {
+			isa = PBXGroup;
+			children = (
+				72C2A9483D5D31BADC6B292B /* Info.plist */,
+				32F17F0D8B1F3A8CE552FE26 /* OVUSBDevice.m */,
+				A9A9473B0A480BFDCA66AB09 /* include */,
+			);
+			path = DiaScannerUSBBridge;
+			sourceTree = "<group>";
+		};
+		4722F6FB8F09C8294C28C97E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E137F6D10BA2FE6847EDABBC /* DiaScanner.app */,
+				6EBC27D8B31BF46D1F66F885 /* DiaScannerCLI */,
+				88DE7040ECAC826F57315125 /* DiaScannerLib.framework */,
+				99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8665A9EFAED72D825D4CF156 /* DiaScannerLib */ = {
+			isa = PBXGroup;
+			children = (
+				EB7D87F3B45F90E06FA8AC70 /* BayerDemosaic.swift */,
+				BCD64D5E149B08FB955F288C /* FrameParser.swift */,
+				C397CC311CA9A0673507C997 /* Info.plist */,
+				E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */,
+				A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */,
+				F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */,
+				28772CF5165F4DAEEC105F22 /* OV5621Sensor.swift */,
+				A20A0C5B9FDDFBF52DD75FB9 /* ScannerDevice.swift */,
+				EF0F908EEE6F8108FF8A0FD5 /* USBTransport.swift */,
+			);
+			path = DiaScannerLib;
+			sourceTree = "<group>";
+		};
+		98E387C3DEA04014254A38BD /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				CFBBE59B1D33E1415D0312DA /* DiaScanner */,
+				298A2D105CCF01576930B12D /* DiaScannerCLI */,
+				8665A9EFAED72D825D4CF156 /* DiaScannerLib */,
+				3D4AE874214652419D6780B4 /* DiaScannerUSBBridge */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		A3E48892EDAC7A2C885334D8 = {
+			isa = PBXGroup;
+			children = (
+				98E387C3DEA04014254A38BD /* Sources */,
+				4722F6FB8F09C8294C28C97E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A9A9473B0A480BFDCA66AB09 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				D76187445B1E91FA13C2958D /* DiaScannerUSBBridge.h */,
+				665B91C9C3AC47024DA135A7 /* OVUSBDevice.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		CFBBE59B1D33E1415D0312DA /* DiaScanner */ = {
+			isa = PBXGroup;
+			children = (
+				78F3CD42DCB40854A4CF0BDB /* ContentView.swift */,
+				A8D256FB09928DD4C8BBE25A /* DiaScannerApp.swift */,
+				730F52999DC9033C031FDB76 /* Info.plist */,
+			);
+			path = DiaScanner;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		C52239B8CC86191E414F5F5C /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DE37B9B6B572AF3E8EA0F6B8 /* DiaScannerUSBBridge.h in Headers */,
+				4DAAC8D42CF53A85B482054D /* OVUSBDevice.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		0E4CF73FBA53A583BABA7CF9 /* DiaScannerCLI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D59EBB188E89948F732DD2A0 /* Build configuration list for PBXNativeTarget "DiaScannerCLI" */;
+			buildPhases = (
+				0E056AAC07AD3EA086139F07 /* Sources */,
+				5DE86CADD2AC4B7582926DFB /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				21D6EB3BD5AE59FEA2B0150A /* PBXTargetDependency */,
+				D939D478D943241963F013AF /* PBXTargetDependency */,
+			);
+			name = DiaScannerCLI;
+			packageProductDependencies = (
+			);
+			productName = DiaScannerCLI;
+			productReference = 6EBC27D8B31BF46D1F66F885 /* DiaScannerCLI */;
+			productType = "com.apple.product-type.tool";
+		};
+		817BA2CFA4EC835E4A7BD616 /* DiaScannerUSBBridge */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 74A57D82CF6BFF1368806B5D /* Build configuration list for PBXNativeTarget "DiaScannerUSBBridge" */;
+			buildPhases = (
+				C52239B8CC86191E414F5F5C /* Headers */,
+				3674BC99D2929F9A71EBA6AB /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DiaScannerUSBBridge;
+			packageProductDependencies = (
+			);
+			productName = DiaScannerUSBBridge;
+			productReference = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		D1A879AF2D308B32F5AAA7E7 /* DiaScanner */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4503075EA223666F4F38E5AB /* Build configuration list for PBXNativeTarget "DiaScanner" */;
+			buildPhases = (
+				7DF259489A13E0075530231B /* Sources */,
+				8D2708848DD9C35F39714D83 /* Frameworks */,
+				FAE4A1F2FC2FB092B935DBD0 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				22A3794133E80E7B45698709 /* PBXTargetDependency */,
+				1238869CCDC87A0A63143356 /* PBXTargetDependency */,
+			);
+			name = DiaScanner;
+			packageProductDependencies = (
+			);
+			productName = DiaScanner;
+			productReference = E137F6D10BA2FE6847EDABBC /* DiaScanner.app */;
+			productType = "com.apple.product-type.application";
+		};
+		FB64F0691E7445E93D624DDF /* DiaScannerLib */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8561C8B4620DA75492D27000 /* Build configuration list for PBXNativeTarget "DiaScannerLib" */;
+			buildPhases = (
+				1B8F2002A7A03F29247C6BD5 /* Sources */,
+				B01086E5A7ACABDD639A924C /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				003979FCF106D32C66151126 /* PBXTargetDependency */,
+			);
+			name = DiaScannerLib;
+			packageProductDependencies = (
+			);
+			productName = DiaScannerLib;
+			productReference = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0360617EEBEEA24B60A4AE3F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					817BA2CFA4EC835E4A7BD616 = {
+						ProvisioningStyle = Manual;
+					};
+					D1A879AF2D308B32F5AAA7E7 = {
+						ProvisioningStyle = Manual;
+					};
+					FB64F0691E7445E93D624DDF = {
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 2EE7413B45634EA364FF6E3F /* Build configuration list for PBXProject "DiaScanner" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A3E48892EDAC7A2C885334D8;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 4722F6FB8F09C8294C28C97E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D1A879AF2D308B32F5AAA7E7 /* DiaScanner */,
+				0E4CF73FBA53A583BABA7CF9 /* DiaScannerCLI */,
+				FB64F0691E7445E93D624DDF /* DiaScannerLib */,
+				817BA2CFA4EC835E4A7BD616 /* DiaScannerUSBBridge */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0E056AAC07AD3EA086139F07 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3AC632B2E6601FE84B569029 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B8F2002A7A03F29247C6BD5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				87036B952468B91B124043EF /* BayerDemosaic.swift in Sources */,
+				61661CCF95462A092BCA0C84 /* FrameParser.swift in Sources */,
+				D9677F56A5336796D8E3D1C6 /* IOKitUSBTransport.swift in Sources */,
+				5D790B2DED0A51D150050EFB /* OV2640Sensor.swift in Sources */,
+				C9EEE1C6CFB7F6CD68E72ED9 /* OV550Controller.swift in Sources */,
+				5943A6C3F2377DE6D9ED90C3 /* OV5621Sensor.swift in Sources */,
+				D4E93FB72DAB7A8324B74405 /* ScannerDevice.swift in Sources */,
+				75C6A053B51F4B6B4BC5413D /* USBTransport.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3674BC99D2929F9A71EBA6AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE4191F6E73D8C1652C1F0EB /* OVUSBDevice.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DF259489A13E0075530231B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				17086761AB4AE102BED7BCBA /* ContentView.swift in Sources */,
+				5C6EC8DB7287D2B28F55C68C /* DiaScannerApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		003979FCF106D32C66151126 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 817BA2CFA4EC835E4A7BD616 /* DiaScannerUSBBridge */;
+			targetProxy = E2FA1BDB6752FC4CA3F6F6D7 /* PBXContainerItemProxy */;
+		};
+		1238869CCDC87A0A63143356 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 817BA2CFA4EC835E4A7BD616 /* DiaScannerUSBBridge */;
+			targetProxy = BCC524EF8C47BDE1C3C4E105 /* PBXContainerItemProxy */;
+		};
+		21D6EB3BD5AE59FEA2B0150A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FB64F0691E7445E93D624DDF /* DiaScannerLib */;
+			targetProxy = 1F2A74530B2215857B63A466 /* PBXContainerItemProxy */;
+		};
+		22A3794133E80E7B45698709 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FB64F0691E7445E93D624DDF /* DiaScannerLib */;
+			targetProxy = 6C20B7020F9B681BC374ED52 /* PBXContainerItemProxy */;
+		};
+		D939D478D943241963F013AF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 817BA2CFA4EC835E4A7BD616 /* DiaScannerUSBBridge */;
+			targetProxy = 578B5F44684270821C939B87 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1BB6515D8A64DDB3F418AB9C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		2F2052D90B19DCE485BB840A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INFOPLIST_FILE = Sources/DiaScannerUSBBridge/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "-framework IOKit -framework CoreFoundation -framework IOUSBHost";
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScannerUSBBridge;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		336EBDD0C74C251EF4F8E7FC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				INFOPLIST_FILE = Sources/DiaScannerLib/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScannerLib;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		3A6908C51AF02E87E20D08DC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				INFOPLIST_FILE = Sources/DiaScannerLib/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScannerLib;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		A2D5A2A53B731C99000A1613 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScannerCLI;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		D735E63165EE8439618190BC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				INFOPLIST_FILE = Sources/DiaScanner/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScanner;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		D9BCCA24F67DC035526B8B4B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INFOPLIST_FILE = Sources/DiaScannerUSBBridge/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "-framework IOKit -framework CoreFoundation -framework IOUSBHost";
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScannerUSBBridge;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		E4BFB37B64E1EBA5E269AC65 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				INFOPLIST_FILE = Sources/DiaScanner/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScanner;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		EFC90BA5D6D197B56470CF80 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScannerCLI;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		F313D371FBA6D897D943579E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2EE7413B45634EA364FF6E3F /* Build configuration list for PBXProject "DiaScanner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1BB6515D8A64DDB3F418AB9C /* Debug */,
+				F313D371FBA6D897D943579E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4503075EA223666F4F38E5AB /* Build configuration list for PBXNativeTarget "DiaScanner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D735E63165EE8439618190BC /* Debug */,
+				E4BFB37B64E1EBA5E269AC65 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		74A57D82CF6BFF1368806B5D /* Build configuration list for PBXNativeTarget "DiaScannerUSBBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2F2052D90B19DCE485BB840A /* Debug */,
+				D9BCCA24F67DC035526B8B4B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8561C8B4620DA75492D27000 /* Build configuration list for PBXNativeTarget "DiaScannerLib" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A6908C51AF02E87E20D08DC /* Debug */,
+				336EBDD0C74C251EF4F8E7FC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D59EBB188E89948F732DD2A0 /* Build configuration list for PBXNativeTarget "DiaScannerCLI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A2D5A2A53B731C99000A1613 /* Debug */,
+				EFC90BA5D6D197B56470CF80 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0360617EEBEEA24B60A4AE3F /* Project object */;
+}

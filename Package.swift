@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "DiaScannerLib", targets: ["DiaScannerLib"]),
+        .library(name: "DiaScannerUSBBridge", targets: ["DiaScannerUSBBridge"]),
         .executable(name: "DiaScanner", targets: ["DiaScanner"]),
         .executable(name: "DiaScannerCLI", targets: ["DiaScannerCLI"]),
     ],

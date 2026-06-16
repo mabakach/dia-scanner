@@ -1,0 +1,130 @@
+name: DiaScanner
+
+options:
+  bundleIdPrefix: ch.mabaka
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  xcodeVersion: "16.0"
+
+targets:
+
+  DiaScannerUSBBridge:
+    type: framework
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/DiaScannerUSBBridge
+        headerVisibility: public
+    info:
+      path: Sources/DiaScannerUSBBridge/Info.plist
+      properties:
+        CFBundleIdentifier: ch.mabaka.DiaScannerUSBBridge
+        CFBundleName: DiaScannerUSBBridge
+        CFBundlePackageType: FMWK
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0"
+    settings:
+      base:
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        OTHER_LDFLAGS: "-framework IOKit -framework CoreFoundation -framework IOUSBHost"
+        DEFINES_MODULE: YES
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+
+  DiaScannerLib:
+    type: framework
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - Sources/DiaScannerLib
+    dependencies:
+      - target: DiaScannerUSBBridge
+    info:
+      path: Sources/DiaScannerLib/Info.plist
+      properties:
+        CFBundleIdentifier: ch.mabaka.DiaScannerLib
+        CFBundleName: DiaScannerLib
+        CFBundlePackageType: FMWK
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0"
+    settings:
+      base:
+        SWIFT_VERSION: 6.0
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        DEFINES_MODULE: YES
+        FRAMEWORK_SEARCH_PATHS: $(inherited) $(BUILT_PRODUCTS_DIR)
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+
+  DiaScanner:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - Sources/DiaScanner
+    dependencies:
+      - target: DiaScannerLib
+        embed: true
+        codeSign: true
+      - target: DiaScannerUSBBridge
+        embed: true
+        codeSign: true
+    info:
+      path: Sources/DiaScanner/Info.plist
+      properties:
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: DiaScanner
+        CFBundleIdentifier: ch.mabaka.DiaScanner
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0"
+        NSPrincipalClass: NSApplication
+        NSHighResolutionCapable: true
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+    settings:
+      base:
+        SWIFT_VERSION: 6.0
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        PRODUCT_BUNDLE_IDENTIFIER: ch.mabaka.DiaScanner
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        FRAMEWORK_SEARCH_PATHS: $(inherited) $(BUILT_PRODUCTS_DIR)
+
+  DiaScannerCLI:
+    type: tool
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - Sources/DiaScannerCLI
+    dependencies:
+      - target: DiaScannerLib
+      - target: DiaScannerUSBBridge
+    settings:
+      base:
+        SWIFT_VERSION: 6.0
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        PRODUCT_BUNDLE_IDENTIFIER: ch.mabaka.DiaScannerCLI
+        FRAMEWORK_SEARCH_PATHS: $(inherited) $(BUILT_PRODUCTS_DIR)
+
+schemes:
+  DiaScanner:
+    build:
+      targets:
+        DiaScanner: all
+        DiaScannerLib: all
+        DiaScannerUSBBridge: all
+    run:
+      config: Debug
+      executable: DiaScanner
+    archive:
+      config: Release
+
+  DiaScannerCLI:
+    build:
+      targets:
+        DiaScannerCLI: all
+        DiaScannerLib: all
+        DiaScannerUSBBridge: all
+    run:
+      config: Debug
+      executable: DiaScannerCLI

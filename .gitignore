@@ -11,3 +11,7 @@ DerivedData/
 Package.resolved
 *.o
 *.d
+
+# xcodegen — regenerate with: xcodegen generate
+DiaScanner.xcodeproj/project.xcworkspace/
+DiaScanner.xcodeproj/xcuserdata/
