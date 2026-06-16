@@ -26,7 +26,6 @@ public final class ScannerDevice: ObservableObject {
     private var usbDevice:    OVUSBDevice?
     private var transport:    IOKitUSBTransport?
     private var ov5621:       OV5621Sensor?
-    private var streamTask:   Task<Void, Never>?
 
     public init() {}
 
@@ -96,16 +95,22 @@ public final class ScannerDevice: ObservableObject {
         }
     }
 
-    public func disconnect() {
-        streamTask?.cancel()
-        streamTask  = nil
-        liveFrame   = nil
-        try? ov5621?.stop()
-        usbDevice?.disconnectScanner()
-        usbDevice   = nil
-        transport   = nil
-        ov5621      = nil
+    public func disconnect() async {
+        // Update UI state immediately so the live feed stops showing.
         isConnected = false
+        liveFrame   = nil
+        // Stop streaming and close USB on a background thread — stopStreaming
+        // blocks up to 3 s waiting for in-flight batches to drain.
+        let device = usbDevice
+        let sensor = ov5621
+        usbDevice  = nil
+        transport  = nil
+        ov5621     = nil
+        await Task.detached {
+            device?.stopStreaming()
+            try? sensor?.stop()
+            device?.disconnectScanner()
+        }.value
     }
 
     private func startLivePreview() {
@@ -114,26 +119,24 @@ public final class ScannerDevice: ObservableObject {
         let height   = OV5621Sensor.frameHeight
         let expected = UInt(OV5621Sensor.frameBytes)
 
-        streamTask = Task.detached(priority: .userInitiated) { [weak self] in
-            while !Task.isCancelled {
-                guard let self else { break }
-                do {
-                    let raw = try device.readFrame(withTimeout: 3.0, frameBytes: expected)
-                    if Task.isCancelled { break }
-                    let rows = raw.count / width
+        do {
+            try device.startStreaming(withFrameBytes: expected) { [weak self] rawData in
+                // Called on _isochQueue — dispatch demosaic to avoid blocking USB pipeline.
+                Task.detached(priority: .userInitiated) { [weak self] in
+                    let rows = rawData.count / width
                     let h    = min(height, rows)
-                    guard h > 0 else { continue }
-                    let trimmed = raw.count == width * h ? raw : Data(raw.prefix(width * h))
+                    guard h > 0 else { return }
+                    let trimmed = rawData.count == width * h
+                        ? rawData : Data(rawData.prefix(width * h))
                     let rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
-                    guard let image = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h) else { continue }
-                    if Task.isCancelled { break }
+                    guard let image = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h) else { return }
+                    guard let self else { return }
                     await MainActor.run { self.liveFrame = image }
-                } catch {
-                    if Task.isCancelled { break }
-                    ScannerDevice.log("livePreview: \(error)")
-                    try? await Task.sleep(nanoseconds: 500_000_000)
                 }
             }
+        } catch {
+            Self.log("startStreaming failed: \(error)")
+            lastError = error.localizedDescription
         }
     }
 

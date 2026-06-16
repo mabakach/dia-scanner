@@ -37,7 +37,7 @@ struct ContentView: View {
                 Button(scanner.isConnected ? "Disconnect" : "Connect Scanner") {
                     Task {
                         if scanner.isConnected {
-                            scanner.disconnect()
+                            await scanner.disconnect()
                         } else {
                             await scanner.connect()
                         }
@@ -105,7 +105,7 @@ struct ContentView: View {
                         Text("Working…")
                             .foregroundStyle(.secondary)
                     }
-                } else if let frame = scanner.liveFrame {
+                } else if scanner.isConnected, let frame = scanner.liveFrame {
                     Image(nsImage: frame)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
