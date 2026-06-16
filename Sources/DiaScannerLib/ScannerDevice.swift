@@ -21,16 +21,18 @@ public final class ScannerDevice: ObservableObject {
     @Published public var isBusy        = false
     @Published public var lastError: String?
     @Published public var capturedImage: NSImage?
+    @Published public var liveFrame:     NSImage?
 
-    private var usbDevice: OVUSBDevice?
-    private var transport: IOKitUSBTransport?
-    private var ov5621:    OV5621Sensor?
+    private var usbDevice:  OVUSBDevice?
+    private var transport:  IOKitUSBTransport?
+    private var ov5621:     OV5621Sensor?
+    private var streamTask: Task<Void, Never>?
 
     public init() {}
 
     // ─── Logging ───────────────────────────────────────────────────
 
-    private static func log(_ msg: String) {
+    private static nonisolated func log(_ msg: String) {
         let line = "\(Date()): \(msg)\n"
         let logURL = URL(fileURLWithPath: "/tmp/diascanner.log")
         if let fh = try? FileHandle(forWritingTo: logURL) {
@@ -86,6 +88,7 @@ public final class ScannerDevice: ObservableObject {
             ov5621      = sensor
             isConnected = true
             Self.log("connected!")
+            startLivePreview()
         } catch {
             Self.log("connect FAILED: \(error)")
             lastError = error.localizedDescription
@@ -93,97 +96,95 @@ public final class ScannerDevice: ObservableObject {
         }
     }
 
-    public func disconnect() {
-        try? ov5621?.stop()
-        usbDevice?.disconnectScanner()
-        usbDevice   = nil
-        transport   = nil
-        ov5621      = nil
+    public func disconnect() async {
         isConnected = false
+        liveFrame   = nil
+        // Cancelling the consumer task ends the AsyncStream for-await loop automatically.
+        streamTask?.cancel()
+        streamTask = nil
+        // Stop USB on a background thread — stopStreaming blocks up to 3 s.
+        let device = usbDevice
+        let sensor = ov5621
+        usbDevice  = nil
+        transport  = nil
+        ov5621     = nil
+        await Task.detached {
+            device?.stopStreaming()
+            try? sensor?.stop()
+            device?.disconnectScanner()
+        }.value
+    }
+
+    private func startLivePreview() {
+        guard let device = usbDevice else { return }
+        let width    = OV5621Sensor.frameWidth
+        let height   = OV5621Sensor.frameHeight
+        let expected = UInt(OV5621Sensor.frameBytes)
+
+        // Stream and continuation are created in a nonisolated context so they are
+        // never in the main actor's region. Only the Sendable AsyncStream crosses
+        // back to the main actor. The continuation stays nonisolated for its lifetime,
+        // making the ObjC 'sending' handler closure trivially region-safe.
+        let stream: AsyncStream<Data>
+        do {
+            stream = try Self.beginStreaming(on: device, frameBytes: expected)
+        } catch {
+            Self.log("startStreaming failed: \(error)")
+            lastError = error.localizedDescription
+            return
+        }
+
+        // Consume frames on the main actor; demosaic runs in a detached task.
+        // bufferingNewest(1) (set in beginStreaming) drops stale frames when
+        // demosaic can't keep up. Task cancellation ends the for-await loop.
+        streamTask = Task {
+            for await rawData in stream {
+                let image: NSImage? = await Task.detached(priority: .userInitiated) {
+                    let rows = rawData.count / width
+                    let h    = min(height, rows)
+                    guard h > 0 else { return nil }
+                    let trimmed = rawData.count == width * h
+                        ? rawData : Data(rawData.prefix(width * h))
+                    let rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
+                    return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h)
+                }.value
+                guard !Task.isCancelled, let image else { continue }
+                self.liveFrame = image
+            }
+        }
+    }
+
+    // Both AsyncStream and its continuation are created here, in a nonisolated
+    // context. The continuation is captured by the frame handler closure and never
+    // touches the main actor's region, so it can be passed as a 'sending' parameter
+    // to the ObjC startStreaming method without a region-isolation error.
+    private static nonisolated func beginStreaming(
+        on device: OVUSBDevice,
+        frameBytes: UInt
+    ) throws -> AsyncStream<Data> {
+        let (stream, continuation) = AsyncStream.makeStream(
+            of: Data.self,
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        try device.startStreaming(withFrameBytes: frameBytes) { rawData in
+            continuation.yield(rawData)
+        }
+        return stream
     }
 
     // ─── Capture ───────────────────────────────────────────────────
 
     public func captureFrame() async {
-        guard isConnected, let device = usbDevice else {
+        guard isConnected else {
             lastError = "Scanner not connected"
             return
         }
-        isBusy = true
-        lastError = nil
-        defer { isBusy = false }
-
-        do {
-            Self.log("captureFrame: rawIsochDump 5s…")
-            let rawData: Data = try await Task.detached(priority: .userInitiated) {
-                try Self.captureOneFrame(device: device)
-            }.value
-
-            Self.log("captureFrame: got \(rawData.count) bytes — demosaicing…")
-            let width  = OV5621Sensor.frameWidth
-            let rows   = rawData.count / width
-            let height = min(OV5621Sensor.frameHeight, rows)
-            let trimmed = rawData.count == width * height
-                ? rawData
-                : Data(rawData.prefix(width * height))
-
-            let rgb = BayerDemosaic.demosaic(trimmed, width: width, height: height, pattern: .bggr)
-            if let image = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height) {
-                Self.log("captureFrame: image \(Int(image.size.width))×\(Int(image.size.height))")
-                capturedImage = image
-            } else {
-                lastError = "Failed to create image from raw frame data"
-            }
-        } catch {
-            Self.log("captureFrame FAILED: \(error)")
-            lastError = error.localizedDescription
+        guard let frame = liveFrame else {
+            lastError = "No live frame available yet"
+            return
         }
-    }
-
-    /// Blocking helper — runs on a detached task. Dumps the isoch stream for 5 s,
-    /// parses PTS groups, and returns the payload of the largest (best) group.
-    private static nonisolated func captureOneFrame(device: OVUSBDevice) throws -> Data {
-        let sizes = NSMutableArray()
-        let dump  = try device.rawIsochDump(withDuration: 5.0, packetSizes: sizes)
-        let pktSizes = (sizes as! [NSNumber]).map { $0.intValue }
-
-        var groups: [(pts: UInt32, fid: UInt8, payload: Data)] = []
-        var curPayload = Data()
-        var curPts: UInt32 = 0
-        var curFid: UInt8  = 0
-        var haveCur = false
-        var off = 0
-
-        dump.withUnsafeBytes { rawPtr in
-            let bytes = rawPtr.bindMemory(to: UInt8.self).baseAddress!
-            for sz in pktSizes {
-                if sz < 12 { off += sz; continue }
-                let flags = bytes[off + 1]
-                let pts = UInt32(bytes[off+2]) | (UInt32(bytes[off+3]) << 8)
-                        | (UInt32(bytes[off+4]) << 16) | (UInt32(bytes[off+5]) << 24)
-                let fid: UInt8 = flags & 1
-                if !haveCur { curPts = pts; curFid = fid; haveCur = true }
-                if pts != curPts || fid != curFid {
-                    groups.append((curPts, curFid, curPayload))
-                    curPayload = Data()
-                    curPts = pts; curFid = fid
-                }
-                curPayload.append(Data(bytes: bytes + off + 12, count: sz - 12))
-                off += sz
-            }
-        }
-        if haveCur { groups.append((curPts, curFid, curPayload)) }
-
-        guard let biggest = groups.max(by: { $0.payload.count < $1.payload.count }) else {
-            throw NSError(domain: "diascanner", code: 2,
-                          userInfo: [NSLocalizedDescriptionKey: "No frame data received"])
-        }
-
-        var raw = biggest.payload
-        if raw.count >= 4, raw.suffix(4) == Data([0xFF, 0x5A, 0xA5, 0x01]) {
-            raw = raw.prefix(raw.count - 4)
-        }
-        return Data(raw)
+        capturedImage = frame
+        Self.log("captureFrame: snapshot from live feed")
     }
 
     // ─── Save ──────────────────────────────────────────────────────

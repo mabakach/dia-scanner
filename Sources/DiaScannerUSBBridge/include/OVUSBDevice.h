@@ -78,12 +78,20 @@ extern NSErrorDomain const OVUSBErrorDomain;
 /// Selects the USB interface alternate setting (0=idle, 1=streaming).
 - (BOOL)setAlternateInterface:(uint8_t)altSetting error:(NSError *__autoreleasing *)error;
 
-/// Reads one complete RAW8 frame from the isochronous IN pipe.
-/// `frameBytes` is the expected payload size — used as the hard cap to detect a
-/// full frame independent of EOF. Pass 0 to rely solely on FID/EOF markers.
-- (nullable NSData *)readFrameWithTimeout:(NSTimeInterval)timeout
-                               frameBytes:(NSUInteger)frameBytes
-                                    error:(NSError *__autoreleasing *)error;
+/// Called on the internal isoch serial queue for each complete RAW8 frame.
+/// MUST return quickly — dispatch heavy work (demosaic) to another queue.
+typedef void (^OVFrameHandler)(NSData * _Nonnull frameData);
+
+/// Starts continuous isochronous streaming using 8 async-pipelined URBs.
+/// frameHandler is called on the internal isoch queue for each complete frame;
+/// it must not block. Call stopStreaming to stop.
+- (BOOL)startStreamingWithFrameBytes:(NSUInteger)frameBytes
+                        frameHandler:(OVFrameHandler)frameHandler
+                               error:(NSError *__autoreleasing *)error;
+
+/// Stops streaming started by startStreamingWithFrameBytes:frameHandler:error:.
+/// Blocks until all in-flight batches complete (≤3 s). Call from a background thread.
+- (void)stopStreaming;
 
 /// Streams raw isochronous data (including UVC-style headers) for `duration` seconds.
 /// Returns a single buffer with each captured microframe's actual data concatenated.

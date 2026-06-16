@@ -48,6 +48,15 @@ static NSError *ovError(OVUSBError code, NSString *description) {
     IOUSBHostInterface      *_hostIface;
     dispatch_queue_t         _isochQueue;
     BOOL _isOpen;
+
+    // Continuous streaming state (startStreamingWithFrameBytes:frameHandler:error:)
+    volatile BOOL              _streaming;
+    dispatch_semaphore_t       _streamDone;
+    IOUSBHostPipe             *_streamPipe;
+    NSUInteger                 _streamKInFlight;
+    IOUSBHostIsochronousTransaction **_streamTxLists;
+    NSMutableArray<NSMutableData *> *_streamBatchBufs;
+    void (^_streamSubmitBlock)(NSUInteger);
 }
 
 - (void)dealloc { [self disconnectDevice]; }
@@ -618,6 +627,191 @@ static NSError *ovError(OVUSBError code, NSString *description) {
         *error = ovError(OVUSBErrorTimeout, @"Frame read timeout (isoch)");
     }
     return result;
+}
+
+// ─── Continuous streaming (async-pipelined, 8 URBs in flight) ─────
+
+- (BOOL)startStreamingWithFrameBytes:(NSUInteger)frameBytes
+                        frameHandler:(OVFrameHandler)frameHandler
+                               error:(NSError **)error {
+    if (!_hostIface) {
+        if (error) *error = ovError(OVUSBErrorPipeFailed, @"Host interface not open");
+        return NO;
+    }
+
+    NSError *hostErr = nil;
+    IOUSBHostPipe *pipe = [_hostIface copyPipeWithAddress:OV550_ISOCH_IN_ADDR error:&hostErr];
+    if (!pipe) {
+        [self _log:[NSString stringWithFormat:@"startStreaming: pipe failed: %@", hostErr]];
+        if (error) *error = hostErr ?: ovError(OVUSBErrorPipeFailed, @"copyPipeWithAddress:0x81 failed");
+        return NO;
+    }
+    _streamPipe = pipe;
+
+    // Derive packet size from endpoint descriptor (same logic as rawIsochDump).
+    const IOUSBHostIOSourceDescriptors *srcDesc = pipe.descriptors;
+    uint32_t kPktSize = 3060;
+    if (srcDesc) {
+        uint16_t wMPS  = USBToHostWord(srcDesc->descriptor.wMaxPacketSize);
+        uint16_t pay   = wMPS & 0x07FF;
+        uint16_t mult  = ((wMPS >> 11) & 0x03) + 1;
+        uint32_t perMF = (uint32_t)pay * mult;
+        if (perMF > 0) kPktSize = perMF;
+    }
+    [self _log:[NSString stringWithFormat:@"startStreaming: kPktSize=%u", kPktSize]];
+
+    const NSUInteger kBatch        = 256;   // 32ms per batch
+    const NSUInteger kInFlight     = 8;     // same as rawIsochDump
+    const uint64_t   kBatchFrames  = 32;    // USB 1ms frames per batch
+
+    _streamKInFlight = kInFlight;
+    _streamBatchBufs = [NSMutableArray arrayWithCapacity:kInFlight];
+    _streamTxLists   = (IOUSBHostIsochronousTransaction **)
+                       calloc(kInFlight, sizeof(IOUSBHostIsochronousTransaction *));
+    for (NSUInteger i = 0; i < kInFlight; i++) {
+        [_streamBatchBufs addObject:[NSMutableData dataWithLength:(size_t)kBatch * kPktSize]];
+        _streamTxLists[i] = (IOUSBHostIsochronousTransaction *)
+                            calloc(kBatch, sizeof(IOUSBHostIsochronousTransaction));
+    }
+
+    _streaming = YES;
+    _streamDone = dispatch_semaphore_create(0);
+
+    // Per-batch frame assembly state — captured in blocks, lives on _isochQueue.
+    __block uint64_t nextFrame   = [_hostIface frameNumberWithTime:nil] + 16;
+    __block NSUInteger inFlight  = 0;
+    __block NSMutableData *accum = [NSMutableData dataWithCapacity:frameBytes];
+    __block int8_t  curFID       = -1;
+    __block uint32_t curPTS      = 0;
+    __block BOOL haveFrame       = NO;
+
+    // Alias ivars so the block doesn't capture self for array/txlist access
+    // (self is still captured for _streaming, _hostIface, _streamDone, _log).
+    IOUSBHostIsochronousTransaction **txLists = _streamTxLists;
+    NSMutableArray<NSMutableData *> *bufs     = _streamBatchBufs;
+    NSUInteger kPktSz = kPktSize;
+
+    __block __weak void (^weakSubmit)(NSUInteger);
+
+    void (^submit)(NSUInteger) = ^(NSUInteger idx) {
+        // Wind-down path: streaming stopped — just decrement and signal when done.
+        if (!self->_streaming) {
+            if (--inFlight == 0) dispatch_semaphore_signal(self->_streamDone);
+            return;
+        }
+
+        memset(txLists[idx], 0, kBatch * sizeof(IOUSBHostIsochronousTransaction));
+        for (NSUInteger i = 0; i < kBatch; i++) {
+            txLists[idx][i].requestCount = (uint32_t)kPktSz;
+            txLists[idx][i].offset       = (uint32_t)(i * kPktSz);
+        }
+
+        uint64_t fn      = nextFrame;
+        nextFrame       += kBatchFrames;
+        uint64_t nowFN   = [self->_hostIface frameNumberWithTime:nil];
+        if (fn < nowFN + 4)          fn = nowFN + 4;
+        if (nextFrame < fn + kBatchFrames) nextFrame = fn + kBatchFrames;
+
+        NSError *enqErr = nil;
+        BOOL ok = [pipe enqueueIORequestWithData:bufs[idx]
+                                 transactionList:txLists[idx]
+                            transactionListCount:kBatch
+                                firstFrameNumber:fn
+                                         options:0
+                                           error:&enqErr
+                               completionHandler:^(IOReturn __unused st,
+                                                   IOUSBHostIsochronousTransaction * __unused t) {
+            // Parse UVC-compatible payload headers and assemble frames.
+            // Layout: byte[0]=bHeaderLength (0x0C), byte[1]=bmHeaderInfo flags.
+            // Pixel payload starts at byte[hlen]. FID (bit0) toggles at frame boundaries.
+            const uint8_t *bytes = (const uint8_t *)[bufs[idx] bytes];
+            for (NSUInteger i = 0; i < kBatch; i++) {
+                uint32_t actual = txLists[idx][i].completeCount;
+                if (actual < 2) continue;
+
+                const uint8_t *pkt  = bytes + i * kPktSz;
+                uint8_t hlen  = pkt[0];
+                uint8_t flags = pkt[1];
+                if (hlen == 0 || hlen > actual) continue;
+
+                uint8_t fid = flags & 0x01;
+                uint8_t eof = (flags >> 1) & 0x01;
+                uint8_t err = (flags >> 6) & 0x01;
+                if (err) continue;
+
+                uint8_t pts_p = (flags >> 2) & 0x01;
+                uint32_t pts  = 0;
+                if (pts_p && actual >= 6)
+                    pts = ((uint32_t)pkt[5] << 24) | ((uint32_t)pkt[4] << 16)
+                        | ((uint32_t)pkt[3] << 8)  |  (uint32_t)pkt[2];
+
+                // Frame boundary: FID toggle or PTS change (gspca semantics).
+                BOOL boundary = (curFID >= 0) &&
+                    (fid != (uint8_t)curFID || (pts_p && pts != curPTS));
+
+                if (boundary) {
+                    if (haveFrame && accum.length >= frameBytes / 2)
+                        frameHandler([accum copy]);
+                    [accum setLength:0];
+                    haveFrame = YES;
+                }
+                curFID = fid;
+                if (pts_p) curPTS = pts;
+
+                uint32_t payloadLen = actual - hlen;
+                if (payloadLen > 0 && accum.length < frameBytes) {
+                    NSUInteger toAdd = MIN(payloadLen, frameBytes - accum.length);
+                    [accum appendBytes:pkt + hlen length:toAdd];
+                    if (haveFrame && accum.length >= frameBytes) {
+                        frameHandler([accum copy]);
+                        [accum setLength:0];
+                        haveFrame = NO;
+                    }
+                }
+
+                if (eof && haveFrame && accum.length >= frameBytes / 2) {
+                    frameHandler([accum copy]);
+                    [accum setLength:0];
+                    haveFrame = NO;
+                }
+            }
+
+            if (weakSubmit) weakSubmit(idx);
+            else if (--inFlight == 0) dispatch_semaphore_signal(self->_streamDone);
+        }];
+
+        if (!ok) {
+            [self _log:[NSString stringWithFormat:@"startStreaming: enqueue[%zu] failed: %@", idx, enqErr]];
+            if (--inFlight == 0) dispatch_semaphore_signal(self->_streamDone);
+        }
+    };
+    weakSubmit = submit;
+    _streamSubmitBlock = submit;   // keep alive for duration of streaming
+
+    for (NSUInteger i = 0; i < kInFlight; i++) { inFlight++; submit(i); }
+    return YES;
+}
+
+- (void)stopStreaming {
+    if (!_streaming) return;
+    _streaming = NO;
+    [self _log:@"stopStreaming: aborting pipe…"];
+    [_streamPipe abortWithError:nil];
+    if (_streamDone) {
+        dispatch_semaphore_wait(_streamDone,
+            dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+        _streamDone = nil;
+    }
+    // Release submit block first so weakSubmit becomes nil before ivars are cleared.
+    _streamSubmitBlock = nil;
+    _streamPipe        = nil;
+    if (_streamTxLists) {
+        for (NSUInteger i = 0; i < _streamKInFlight; i++) free(_streamTxLists[i]);
+        free(_streamTxLists);
+        _streamTxLists = NULL;
+    }
+    _streamBatchBufs = nil;
+    [self _log:@"stopStreaming: done"];
 }
 
 - (nullable NSData *)rawIsochDumpWithDuration:(NSTimeInterval)duration

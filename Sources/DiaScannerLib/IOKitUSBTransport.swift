@@ -8,7 +8,9 @@
 import Foundation
 import DiaScannerUSBBridge
 
-extension OVUSBDevice: @unchecked Sendable {}
+extension OVUSBDevice:      @unchecked Sendable {}
+extension IOKitUSBTransport: @unchecked Sendable {}
+extension OV5621Sensor:      @unchecked Sendable {}
 
 /// Bridges USBTransport to the Objective-C OVUSBDevice IOKit layer.
 public final class IOKitUSBTransport: USBTransport {
