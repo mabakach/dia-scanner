@@ -23,9 +23,11 @@ public final class ScannerDevice: ObservableObject {
     @Published public var capturedImage: NSImage?
     @Published public var liveFrame:     NSImage?
 
-    private var usbDevice:    OVUSBDevice?
-    private var transport:    IOKitUSBTransport?
-    private var ov5621:       OV5621Sensor?
+    private var usbDevice:          OVUSBDevice?
+    private var transport:          IOKitUSBTransport?
+    private var ov5621:             OV5621Sensor?
+    private var streamContinuation: AsyncStream<Data>.Continuation?
+    private var streamTask:         Task<Void, Never>?
 
     public init() {}
 
@@ -96,11 +98,14 @@ public final class ScannerDevice: ObservableObject {
     }
 
     public func disconnect() async {
-        // Update UI state immediately so the live feed stops showing.
         isConnected = false
         liveFrame   = nil
-        // Stop streaming and close USB on a background thread — stopStreaming
-        // blocks up to 3 s waiting for in-flight batches to drain.
+        // End the stream so the consumer task exits its for-await loop.
+        streamContinuation?.finish()
+        streamContinuation = nil
+        streamTask?.cancel()
+        streamTask = nil
+        // Stop USB on a background thread — stopStreaming blocks up to 3 s.
         let device = usbDevice
         let sensor = ov5621
         usbDevice  = nil
@@ -119,24 +124,43 @@ public final class ScannerDevice: ObservableObject {
         let height   = OV5621Sensor.frameHeight
         let expected = UInt(OV5621Sensor.frameBytes)
 
+        // Use AsyncStream as a bridge: the ObjC handler only captures 'continuation'
+        // (Sendable), satisfying Swift's 'sending' requirement without touching any
+        // main-actor-isolated state from the isoch callback queue.
+        // bufferingNewest(1) drops stale frames when demosaic can't keep up.
+        let (stream, continuation) = AsyncStream.makeStream(
+            of: Data.self,
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        streamContinuation = continuation
+
         do {
-            try device.startStreaming(withFrameBytes: expected) { [weak self] rawData in
-                // Called on _isochQueue — dispatch demosaic to avoid blocking USB pipeline.
-                Task.detached(priority: .userInitiated) { [weak self] in
+            try device.startStreaming(withFrameBytes: expected) { rawData in
+                continuation.yield(rawData)
+            }
+        } catch {
+            continuation.finish()
+            streamContinuation = nil
+            Self.log("startStreaming failed: \(error)")
+            lastError = error.localizedDescription
+            return
+        }
+
+        // Consume frames on the main actor; demosaic runs in a detached task.
+        streamTask = Task {
+            for await rawData in stream {
+                let image: NSImage? = await Task.detached(priority: .userInitiated) {
                     let rows = rawData.count / width
                     let h    = min(height, rows)
-                    guard h > 0 else { return }
+                    guard h > 0 else { return nil }
                     let trimmed = rawData.count == width * h
                         ? rawData : Data(rawData.prefix(width * h))
                     let rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
-                    guard let image = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h) else { return }
-                    guard let self else { return }
-                    await MainActor.run { self.liveFrame = image }
-                }
+                    return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h)
+                }.value
+                guard !Task.isCancelled, let image else { continue }
+                self.liveFrame = image
             }
-        } catch {
-            Self.log("startStreaming failed: \(error)")
-            lastError = error.localizedDescription
         }
     }
 
