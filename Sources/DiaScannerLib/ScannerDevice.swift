@@ -135,9 +135,7 @@ public final class ScannerDevice: ObservableObject {
         streamContinuation = continuation
 
         do {
-            try device.startStreaming(withFrameBytes: expected) { rawData in
-                continuation.yield(rawData)
-            }
+            try Self.installFrameHandler(on: device, frameBytes: expected, continuation: continuation)
         } catch {
             continuation.finish()
             streamContinuation = nil
@@ -161,6 +159,18 @@ public final class ScannerDevice: ObservableObject {
                 guard !Task.isCancelled, let image else { continue }
                 self.liveFrame = image
             }
+        }
+    }
+
+    // Creates the ObjC frame handler in a nonisolated context so its closure
+    // is outside the main actor's region and can be passed as a 'sending' parameter.
+    private static nonisolated func installFrameHandler(
+        on device: OVUSBDevice,
+        frameBytes: UInt,
+        continuation: AsyncStream<Data>.Continuation
+    ) throws {
+        try device.startStreaming(withFrameBytes: frameBytes) { rawData in
+            continuation.yield(rawData)
         }
     }
 
