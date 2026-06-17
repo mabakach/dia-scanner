@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1322401D272D5EE049B9FD1C /* NegativeFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E793D70621A0C27CABE5AD1F /* NegativeFilter.swift */; };
 		17086761AB4AE102BED7BCBA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78F3CD42DCB40854A4CF0BDB /* ContentView.swift */; };
 		1B43BB976247CF85336E8B59 /* DiaScannerUSBBridge.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3AC632B2E6601FE84B569029 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B12285B1CE3B799700F4ED /* main.swift */; };
@@ -102,6 +103,7 @@
 		D76187445B1E91FA13C2958D /* DiaScannerUSBBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DiaScannerUSBBridge.h; sourceTree = "<group>"; };
 		E137F6D10BA2FE6847EDABBC /* DiaScanner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiaScanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOKitUSBTransport.swift; sourceTree = "<group>"; };
+		E793D70621A0C27CABE5AD1F /* NegativeFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NegativeFilter.swift; sourceTree = "<group>"; };
 		EB7D87F3B45F90E06FA8AC70 /* BayerDemosaic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BayerDemosaic.swift; sourceTree = "<group>"; };
 		EF0F908EEE6F8108FF8A0FD5 /* USBTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBTransport.swift; sourceTree = "<group>"; };
 		F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV2640Sensor.swift; sourceTree = "<group>"; };
@@ -173,6 +175,7 @@
 				BCD64D5E149B08FB955F288C /* FrameParser.swift */,
 				C397CC311CA9A0673507C997 /* Info.plist */,
 				E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */,
+				E793D70621A0C27CABE5AD1F /* NegativeFilter.swift */,
 				A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */,
 				F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */,
 				28772CF5165F4DAEEC105F22 /* OV5621Sensor.swift */,
@@ -374,6 +377,7 @@
 				87036B952468B91B124043EF /* BayerDemosaic.swift in Sources */,
 				61661CCF95462A092BCA0C84 /* FrameParser.swift in Sources */,
 				D9677F56A5336796D8E3D1C6 /* IOKitUSBTransport.swift in Sources */,
+				1322401D272D5EE049B9FD1C /* NegativeFilter.swift in Sources */,
 				5D790B2DED0A51D150050EFB /* OV2640Sensor.swift in Sources */,
 				C9EEE1C6CFB7F6CD68E72ED9 /* OV550Controller.swift in Sources */,
 				5943A6C3F2377DE6D9ED90C3 /* OV5621Sensor.swift in Sources */,

@@ -47,6 +47,21 @@ struct ContentView: View {
 
                 Divider()
 
+                // Film type
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Film Type")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Picker("Film Type", selection: $scanner.isNegativeMode) {
+                        Text("Positive (Dia)").tag(false)
+                        Text("Negative").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+
+                Divider()
+
                 // Capture
                 Button {
                     Task { await scanner.captureFrame() }

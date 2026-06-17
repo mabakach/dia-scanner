@@ -17,11 +17,12 @@ public final class ScannerDevice: ObservableObject {
     public static let frameWidth  = OV5621Sensor.frameWidth
     public static let frameHeight = OV5621Sensor.frameHeight
 
-    @Published public var isConnected   = false
-    @Published public var isBusy        = false
+    @Published public var isConnected    = false
+    @Published public var isBusy         = false
     @Published public var lastError: String?
     @Published public var capturedImage: NSImage?
     @Published public var liveFrame:     NSImage?
+    @Published public var isNegativeMode = false
 
     private var usbDevice:  OVUSBDevice?
     private var transport:  IOKitUSBTransport?
@@ -139,13 +140,15 @@ public final class ScannerDevice: ObservableObject {
         // demosaic can't keep up. Task cancellation ends the for-await loop.
         streamTask = Task {
             for await rawData in stream {
-                let image: NSImage? = await Task.detached(priority: .userInitiated) {
+                let negative = self.isNegativeMode
+                let image: NSImage? = await Task.detached(priority: .userInitiated) { () -> NSImage? in
                     let rows = rawData.count / width
                     let h    = min(height, rows)
                     guard h > 0 else { return nil }
                     let trimmed = rawData.count == width * h
                         ? rawData : Data(rawData.prefix(width * h))
-                    let rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
+                    var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
+                    if negative { rgb = NegativeFilter.apply(to: rgb, width: width, height: h) }
                     return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h)
                 }.value
                 guard !Task.isCancelled, let image else { continue }
