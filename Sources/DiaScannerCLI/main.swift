@@ -16,9 +16,9 @@ import DiaScannerUSBBridge
 //
 // Usage: swift run DiaScannerCLI [output-path]
 
-let outputPath = CommandLine.arguments.count > 1
-    ? CommandLine.arguments[1]
-    : "/tmp/diascanner_capture"
+let cliArgs   = CommandLine.arguments.dropFirst()
+let isNegative = cliArgs.contains("--negative")
+let outputPath = cliArgs.filter { !$0.hasPrefix("--") }.first ?? "/tmp/diascanner_capture"
 
 func log(_ msg: String) {
     let ts = ISO8601DateFormatter().string(from: Date())
@@ -128,9 +128,10 @@ func run() throws {
     let width  = OV5621Sensor.frameWidth
     let rowsAvailable = raw.count / width
     let height = min(OV5621Sensor.frameHeight, rowsAvailable)
-    log("CLI: demosaicing \(width)×\(height) BGGR8")
+    log("CLI: demosaicing \(width)×\(height) BGGR8\(isNegative ? " (negative mode)" : "")")
     let trimmed = raw.count == width * height ? Data(raw) : Data(raw.prefix(width * height))
-    let rgb = BayerDemosaic.demosaic(trimmed, width: width, height: height, pattern: .bggr)
+    var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: height, pattern: .bggr)
+    if isNegative { rgb = NegativeFilter.apply(to: rgb, width: width, height: height) }
     if let img    = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height),
        let tiff   = img.tiffRepresentation,
        let bitmap = NSBitmapImageRep(data: tiff),
