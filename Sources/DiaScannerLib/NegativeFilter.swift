@@ -24,25 +24,17 @@ public enum NegativeFilter {
         let count      = pixelCount * 3
         precondition(rgb.count >= count, "RGB data size mismatch")
 
-        // Pass 1 — invert and accumulate per-channel histograms.
-        var inv   = Data(count: count)
+        // Pass 1 — accumulate per-channel histograms from inverted values, no intermediate buffer.
         var histR = [Int](repeating: 0, count: 256)
         var histG = [Int](repeating: 0, count: 256)
         var histB = [Int](repeating: 0, count: 256)
 
         rgb.withUnsafeBytes { srcPtr in
-            inv.withUnsafeMutableBytes { dstPtr in
-                let src = srcPtr.bindMemory(to: UInt8.self).baseAddress!
-                let dst = dstPtr.bindMemory(to: UInt8.self).baseAddress!
-                for i in stride(from: 0, to: count, by: 3) {
-                    let r = 255 - Int(src[i])
-                    let g = 255 - Int(src[i + 1])
-                    let b = 255 - Int(src[i + 2])
-                    dst[i] = UInt8(r); dst[i + 1] = UInt8(g); dst[i + 2] = UInt8(b)
-                    histR[r] += 1
-                    histG[g] += 1
-                    histB[b] += 1
-                }
+            let src = srcPtr.bindMemory(to: UInt8.self).baseAddress!
+            for i in stride(from: 0, to: count, by: 3) {
+                histR[255 - Int(src[i])]     += 1
+                histG[255 - Int(src[i + 1])] += 1
+                histB[255 - Int(src[i + 2])] += 1
             }
         }
 
@@ -60,14 +52,14 @@ public enum NegativeFilter {
         let scaleB = hiB > loB ? 255.0 / Float(hiB - loB) : 1.0
 
         var out = Data(count: count)
-        inv.withUnsafeBytes { srcPtr in
+        rgb.withUnsafeBytes { srcPtr in
             out.withUnsafeMutableBytes { dstPtr in
                 let src = srcPtr.bindMemory(to: UInt8.self).baseAddress!
                 let dst = dstPtr.bindMemory(to: UInt8.self).baseAddress!
                 for i in stride(from: 0, to: count, by: 3) {
-                    dst[i]     = stretch(Int(src[i]),     lo: loR, scale: scaleR)
-                    dst[i + 1] = stretch(Int(src[i + 1]), lo: loG, scale: scaleG)
-                    dst[i + 2] = stretch(Int(src[i + 2]), lo: loB, scale: scaleB)
+                    dst[i]     = stretch(255 - Int(src[i]),     lo: loR, scale: scaleR)
+                    dst[i + 1] = stretch(255 - Int(src[i + 1]), lo: loG, scale: scaleG)
+                    dst[i + 2] = stretch(255 - Int(src[i + 2]), lo: loB, scale: scaleB)
                 }
             }
         }
