@@ -127,13 +127,13 @@ struct ContentView: View {
 
                 Divider()
 
-                // Positive filter
+                // Vignette correction
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Positive Filter")
+                    Text("Vignette Correction")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     HStack {
-                        Text("Vignette")
+                        Text("Strength")
                             .font(.caption2)
                         Spacer()
                         Text(String(format: "%.2f", scanner.vignetteK))
@@ -142,8 +142,6 @@ struct ContentView: View {
                     }
                     Slider(value: $scanner.vignetteK, in: 0...0.9)
                 }
-                .disabled(scanner.isNegativeMode)
-                .opacity(scanner.isNegativeMode ? 0.4 : 1.0)
 
                 Divider()
 

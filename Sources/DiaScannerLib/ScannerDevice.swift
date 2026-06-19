@@ -166,6 +166,7 @@ public final class ScannerDevice: ObservableObject {
                         ? rawData : Data(rawData.prefix(width * h))
                     var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
                     if negative {
+                        rgb = PositiveFilter.applyVignetting(to: rgb, width: width, height: h, vignetteK: vk)
                         rgb = NegativeFilter.apply(to: rgb, width: width, height: h)
                     } else {
                         rgb = PositiveFilter.apply(to: rgb, width: width, height: h, vignetteK: vk)
@@ -223,6 +224,7 @@ public final class ScannerDevice: ObservableObject {
         let image: NSImage? = await Task.detached(priority: .userInitiated) {
             var rgb = BayerDemosaic.demosaic(raw, width: width, height: height, pattern: .bggr)
             if negative {
+                rgb = PositiveFilter.applyVignetting(to: rgb, width: width, height: height, vignetteK: vk)
                 rgb = NegativeFilter.apply(to: rgb, width: width, height: height)
             } else {
                 rgb = PositiveFilter.apply(to: rgb, width: width, height: height, vignetteK: vk)
