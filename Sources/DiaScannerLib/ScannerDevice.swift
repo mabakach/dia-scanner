@@ -161,7 +161,11 @@ public final class ScannerDevice: ObservableObject {
                     let trimmed = rawData.count == width * h
                         ? rawData : Data(rawData.prefix(width * h))
                     var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
-                    if negative { rgb = NegativeFilter.apply(to: rgb, width: width, height: h) }
+                    if negative {
+                        rgb = NegativeFilter.apply(to: rgb, width: width, height: h)
+                    } else {
+                        rgb = PositiveFilter.apply(to: rgb, width: width, height: h)
+                    }
                     return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h)
                 }.value
                 guard !Task.isCancelled, let image else { continue }
@@ -213,7 +217,11 @@ public final class ScannerDevice: ObservableObject {
         let negative = isNegativeMode
         let image: NSImage? = await Task.detached(priority: .userInitiated) {
             var rgb = BayerDemosaic.demosaic(raw, width: width, height: height, pattern: .bggr)
-            if negative { rgb = NegativeFilter.apply(to: rgb, width: width, height: height) }
+            if negative {
+                rgb = NegativeFilter.apply(to: rgb, width: width, height: height)
+            } else {
+                rgb = PositiveFilter.apply(to: rgb, width: width, height: height)
+            }
             return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height)
         }.value
         guard let image else { return }
