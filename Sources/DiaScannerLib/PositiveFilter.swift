@@ -61,13 +61,15 @@ public enum PositiveFilter {
         return out
     }
 
-    /// Applies vignetting correction followed by per-channel auto-levels to packed RGB data.
+    /// Applies vignetting correction and optionally per-channel auto-levels to packed RGB data.
     /// Use this for positive (dia) slides.
     /// - Parameter vignetteK: Correction strength; `0` = none, up to `0.9` (10× corner gain).
+    /// - Parameter applyAutoLevels: When `false`, skips the histogram stretch step.
     public static func apply(to rgb: Data, width: Int, height: Int,
-                             vignetteK: Float = defaultVignetteK) -> Data {
+                             vignetteK: Float = defaultVignetteK,
+                             applyAutoLevels: Bool = true) -> Data {
         let corrected = applyVignetting(to: rgb, width: width, height: height, vignetteK: vignetteK)
-        return autoLevels(corrected, width: width, height: height)
+        return applyAutoLevels ? autoLevels(corrected, width: width, height: height) : corrected
     }
 
     // MARK: - Private helpers

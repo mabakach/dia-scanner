@@ -31,6 +31,7 @@
 		DE37B9B6B572AF3E8EA0F6B8 /* DiaScannerUSBBridge.h in Headers */ = {isa = PBXBuildFile; fileRef = D76187445B1E91FA13C2958D /* DiaScannerUSBBridge.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A7BC3E91F5D26081E7A0B3C /* ImageTransform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2E5A8B0F4D7316C5E8B19F /* ImageTransform.swift */; };
 		48D706C744ED4649BD0D3B29 /* PositiveFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0A825131FC4A73860E088A /* PositiveFilter.swift */; };
+		AAC1CC59838A4023AD383A5B /* RGBHistogram.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02E0252249E4C5FA4DF8558 /* RGBHistogram.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -111,6 +112,7 @@
 		F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV2640Sensor.swift; sourceTree = "<group>"; };
 		9C2E5A8B0F4D7316C5E8B19F /* ImageTransform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTransform.swift; sourceTree = "<group>"; };
 		1F0A825131FC4A73860E088A /* PositiveFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositiveFilter.swift; sourceTree = "<group>"; };
+		D02E0252249E4C5FA4DF8558 /* RGBHistogram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RGBHistogram.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -181,6 +183,7 @@
 				9C2E5A8B0F4D7316C5E8B19F /* ImageTransform.swift */,
 				E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */,
 				1F0A825131FC4A73860E088A /* PositiveFilter.swift */,
+				D02E0252249E4C5FA4DF8558 /* RGBHistogram.swift */,
 				E793D70621A0C27CABE5AD1F /* NegativeFilter.swift */,
 				A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */,
 				F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */,
@@ -385,6 +388,7 @@
 				4A7BC3E91F5D26081E7A0B3C /* ImageTransform.swift in Sources */,
 				D9677F56A5336796D8E3D1C6 /* IOKitUSBTransport.swift in Sources */,
 				48D706C744ED4649BD0D3B29 /* PositiveFilter.swift in Sources */,
+				AAC1CC59838A4023AD383A5B /* RGBHistogram.swift in Sources */,
 				1322401D272D5EE049B9FD1C /* NegativeFilter.swift in Sources */,
 				5D790B2DED0A51D150050EFB /* OV2640Sensor.swift in Sources */,
 				C9EEE1C6CFB7F6CD68E72ED9 /* OV550Controller.swift in Sources */,

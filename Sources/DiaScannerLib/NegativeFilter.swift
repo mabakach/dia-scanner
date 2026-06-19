@@ -17,12 +17,26 @@ import Foundation
 /// scratch outliers without distorting the overall exposure.
 public enum NegativeFilter {
 
-    /// Inverts packed RGB data and auto-levels each channel to remove the orange mask.
+    /// Inverts packed RGB data and optionally auto-levels each channel to remove the orange mask.
     /// Input: 3 bytes per pixel, R-G-B order, `width × height` pixels.
-    public static func apply(to rgb: Data, width: Int, height: Int) -> Data {
+    /// - Parameter applyAutoLevels: When `false`, only inverts (no histogram stretch).
+    public static func apply(to rgb: Data, width: Int, height: Int,
+                             applyAutoLevels: Bool = true) -> Data {
         let pixelCount = width * height
         let count      = pixelCount * 3
         precondition(rgb.count >= count, "RGB data size mismatch")
+
+        guard applyAutoLevels else {
+            var out = Data(count: count)
+            rgb.withUnsafeBytes { srcPtr in
+                out.withUnsafeMutableBytes { dstPtr in
+                    let src = srcPtr.bindMemory(to: UInt8.self).baseAddress!
+                    let dst = dstPtr.bindMemory(to: UInt8.self).baseAddress!
+                    for i in 0..<count { dst[i] = 255 - src[i] }
+                }
+            }
+            return out
+        }
 
         // Pass 1 — accumulate per-channel histograms from inverted values, no intermediate buffer.
         var histR = [Int](repeating: 0, count: 256)

@@ -123,6 +123,25 @@ final class PositiveFilterTests: XCTestCase {
             "PositiveFilter and NegativeFilter must produce distinct output on the same input")
     }
 
+    func testApplyAutoLevelsFalseSkipsStretch() {
+        let w = 4, h = 4
+        var bytes = [UInt8](repeating: 0, count: w * h * 3)
+        for i in 0..<bytes.count { bytes[i] = UInt8((i * 5) % 256) }
+        let rgb = Data(bytes)
+        let withLevels    = PositiveFilter.apply(to: rgb, width: w, height: h, applyAutoLevels: true)
+        let withoutLevels = PositiveFilter.apply(to: rgb, width: w, height: h, applyAutoLevels: false)
+        XCTAssertNotEqual(withLevels, withoutLevels)
+    }
+
+    func testApplyAutoLevelsTrueIsDefaultBehavior() {
+        let w = 4, h = 4
+        var bytes = [UInt8](repeating: 0, count: w * h * 3)
+        for i in 0..<bytes.count { bytes[i] = UInt8((i * 5) % 256) }
+        let rgb = Data(bytes)
+        XCTAssertEqual(PositiveFilter.apply(to: rgb, width: w, height: h),
+                       PositiveFilter.apply(to: rgb, width: w, height: h, applyAutoLevels: true))
+    }
+
     // Applying the filter twice to the same data must yield the same result (deterministic).
     func testIsDeterministic() {
         let w = 8, h = 8

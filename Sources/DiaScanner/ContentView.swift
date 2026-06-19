@@ -127,11 +127,14 @@ struct ContentView: View {
 
                 Divider()
 
-                // Vignette correction
+                // Adjustments
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Vignette Correction")
+                    Text("Adjustments")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if let hist = scanner.histogram {
+                        HistogramView(histogram: hist)
+                    }
                     HStack {
                         Text("Strength")
                             .font(.caption2)
@@ -141,6 +144,8 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                     Slider(value: $scanner.vignetteK, in: 0...0.9)
+                    Toggle("Auto-Levels", isOn: $scanner.autoLevelsEnabled)
+                        .font(.caption2)
                 }
 
                 Divider()
@@ -236,4 +241,37 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .frame(width: 900, height: 700)
+}
+
+private struct HistogramView: View {
+    let histogram: RGBHistogram
+
+    var body: some View {
+        Canvas { ctx, size in
+            let maxR = max(1, histogram.r.max() ?? 1)
+            let maxG = max(1, histogram.g.max() ?? 1)
+            let maxB = max(1, histogram.b.max() ?? 1)
+            let barW = size.width / 256
+            for i in 0..<256 {
+                let x = CGFloat(i) * barW
+                drawBar(ctx, x: x, barW: barW, size: size,
+                        value: histogram.r[i], maxVal: maxR, color: .red)
+                drawBar(ctx, x: x, barW: barW, size: size,
+                        value: histogram.g[i], maxVal: maxG, color: .green)
+                drawBar(ctx, x: x, barW: barW, size: size,
+                        value: histogram.b[i], maxVal: maxB, color: .blue)
+            }
+        }
+        .frame(height: 64)
+        .background(Color.primary.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    private func drawBar(_ ctx: GraphicsContext, x: CGFloat, barW: CGFloat, size: CGSize,
+                         value: Int, maxVal: Int, color: Color) {
+        let h = size.height * CGFloat(value) / CGFloat(maxVal)
+        var path = Path()
+        path.addRect(CGRect(x: x, y: size.height - h, width: max(barW, 1), height: h))
+        ctx.fill(path, with: .color(color.opacity(0.5)))
+    }
 }
