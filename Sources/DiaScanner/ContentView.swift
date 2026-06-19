@@ -199,15 +199,16 @@ struct ContentView: View {
     }
 
     private func saveImage() {
+        guard let captured = scanner.capturedImage else { return }
+        let transformed = captured.applying(imageTransform)
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png, UTType.tiff]
         panel.nameFieldStringValue = "scan.png"
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
             do {
-                try scanner.saveImage(to: url)
+                try scanner.saveImage(transformed, to: url)
             } catch {
-                // Could present an alert; for now log
                 print("Save failed: \(error)")
             }
         }
