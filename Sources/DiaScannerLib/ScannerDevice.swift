@@ -7,6 +7,7 @@
 
 import Foundation
 import AppKit
+import Combine
 import DiaScannerUSBBridge
 
 /// High-level API for the PX-2130 slide scanner.
@@ -24,12 +25,22 @@ public final class ScannerDevice: ObservableObject {
     @Published public var liveFrame:     NSImage?
     @Published public var isNegativeMode = false
 
-    private var usbDevice:  OVUSBDevice?
-    private var transport:  IOKitUSBTransport?
-    private var ov5621:     OV5621Sensor?
-    private var streamTask: Task<Void, Never>?
+    private var usbDevice:       OVUSBDevice?
+    private var transport:       IOKitUSBTransport?
+    private var ov5621:          OV5621Sensor?
+    private var streamTask:      Task<Void, Never>?
+    private var latestRawBayer:  Data?
+    private var capturedRawBayer: Data?
+    private var cancellables = Set<AnyCancellable>()
 
-    public init() {}
+    public init() {
+        $isNegativeMode
+            .dropFirst()
+            .sink { [weak self] _ in
+                Task { [weak self] in await self?.renderCapturedImage() }
+            }
+            .store(in: &cancellables)
+    }
 
     // ─── Logging ───────────────────────────────────────────────────
 
@@ -98,8 +109,9 @@ public final class ScannerDevice: ObservableObject {
     }
 
     public func disconnect() async {
-        isConnected = false
-        liveFrame   = nil
+        isConnected    = false
+        liveFrame      = nil
+        latestRawBayer = nil
         // Cancelling the consumer task ends the AsyncStream for-await loop automatically.
         streamTask?.cancel()
         streamTask = nil
@@ -140,6 +152,7 @@ public final class ScannerDevice: ObservableObject {
         // demosaic can't keep up. Task cancellation ends the for-await loop.
         streamTask = Task {
             for await rawData in stream {
+                self.latestRawBayer = rawData
                 let negative = self.isNegativeMode
                 let image: NSImage? = await Task.detached(priority: .userInitiated) { () -> NSImage? in
                     let rows = rawData.count / width
@@ -182,12 +195,29 @@ public final class ScannerDevice: ObservableObject {
             lastError = "Scanner not connected"
             return
         }
-        guard let frame = liveFrame else {
-            lastError = "No live frame available yet"
+        guard let raw = latestRawBayer else {
+            lastError = "No raw frame available yet"
             return
         }
-        capturedImage = frame
-        Self.log("captureFrame: snapshot from live feed")
+        capturedRawBayer = raw
+        await renderCapturedImage()
+        Self.log("captureFrame: raw Bayer frame captured")
+    }
+
+    // Renders capturedImage from capturedRawBayer using the current isNegativeMode.
+    // Called at capture time and whenever isNegativeMode changes while raw data is held.
+    private func renderCapturedImage() async {
+        guard let raw = capturedRawBayer else { return }
+        let width    = ScannerDevice.frameWidth
+        let height   = ScannerDevice.frameHeight
+        let negative = isNegativeMode
+        let image: NSImage? = await Task.detached(priority: .userInitiated) {
+            var rgb = BayerDemosaic.demosaic(raw, width: width, height: height, pattern: .bggr)
+            if negative { rgb = NegativeFilter.apply(to: rgb, width: width, height: height) }
+            return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height)
+        }.value
+        guard let image else { return }
+        capturedImage = image
     }
 
     // ─── Save ──────────────────────────────────────────────────────
