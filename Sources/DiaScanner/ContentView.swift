@@ -251,27 +251,24 @@ private struct HistogramView: View {
             let maxR = max(1, histogram.r.max() ?? 1)
             let maxG = max(1, histogram.g.max() ?? 1)
             let maxB = max(1, histogram.b.max() ?? 1)
-            let barW = size.width / 256
+            let barW = max(size.width / 256, 1)
             for i in 0..<256 {
                 let x = CGFloat(i) * barW
-                drawBar(ctx, x: x, barW: barW, size: size,
-                        value: histogram.r[i], maxVal: maxR, color: .red)
-                drawBar(ctx, x: x, barW: barW, size: size,
-                        value: histogram.g[i], maxVal: maxG, color: .green)
-                drawBar(ctx, x: x, barW: barW, size: size,
-                        value: histogram.b[i], maxVal: maxB, color: .blue)
+                for (values, maxVal, color) in [
+                    (histogram.r, maxR, Color.red),
+                    (histogram.g, maxG, Color.green),
+                    (histogram.b, maxB, Color.blue)
+                ] {
+                    let h = size.height * CGFloat(values[i]) / CGFloat(maxVal)
+                    ctx.fill(
+                        Path(CGRect(x: x, y: size.height - h, width: barW, height: h)),
+                        with: .color(color.opacity(0.5))
+                    )
+                }
             }
         }
         .frame(height: 64)
         .background(Color.primary.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 4))
-    }
-
-    private func drawBar(_ ctx: GraphicsContext, x: CGFloat, barW: CGFloat, size: CGSize,
-                         value: Int, maxVal: Int, color: Color) {
-        let h = size.height * CGFloat(value) / CGFloat(maxVal)
-        var path = Path()
-        path.addRect(CGRect(x: x, y: size.height - h, width: max(barW, 1), height: h))
-        ctx.fill(path, with: .color(color.opacity(0.5)))
     }
 }
