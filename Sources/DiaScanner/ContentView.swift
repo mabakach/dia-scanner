@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var showSavePanel = false
     @State private var saveURL: URL?
     @State private var imageTransform = ImageTransform()
+    @State private var outputFormat: OutputFormat = .png
+    @State private var jpegQuality: Double = 0.85
 
     var body: some View {
         HSplitView {
@@ -75,6 +77,30 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!scanner.isConnected || scanner.isBusy)
+
+                // Output format
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Output Format")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Picker("Format", selection: $outputFormat) {
+                        ForEach(OutputFormat.allCases, id: \.self) { fmt in
+                            Text(fmt.displayName).tag(fmt)
+                        }
+                    }
+                    .labelsHidden()
+                    if outputFormat.supportsQuality {
+                        HStack {
+                            Text("Quality")
+                                .font(.caption2)
+                            Spacer()
+                            Text("\(Int(jpegQuality * 100))%")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $jpegQuality, in: 0.01...1.0)
+                    }
+                }
 
                 // Save
                 Button {
@@ -253,13 +279,15 @@ struct ContentView: View {
     private func saveImage() {
         guard let captured = scanner.capturedImage else { return }
         let transformed = captured.applying(imageTransform)
+        let fmt = outputFormat
+        let quality = jpegQuality
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [.png, UTType.tiff]
-        panel.nameFieldStringValue = "scan.png"
+        panel.allowedContentTypes = [fmt.utType].compactMap { $0 }
+        panel.nameFieldStringValue = "scan.\(fmt.fileExtension)"
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
             do {
-                try scanner.saveImage(transformed, to: url)
+                try scanner.saveImage(transformed, to: url, format: fmt, quality: quality)
             } catch {
                 print("Save failed: \(error)")
             }
