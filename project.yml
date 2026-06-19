@@ -106,6 +106,22 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: ch.mabaka.DiaScannerCLI
         FRAMEWORK_SEARCH_PATHS: $(inherited) $(BUILT_PRODUCTS_DIR)
 
+  DiaScannerTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - Tests/DiaScannerTests
+    dependencies:
+      - target: DiaScannerLib
+    settings:
+      base:
+        SWIFT_VERSION: 6.0
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        FRAMEWORK_SEARCH_PATHS: $(inherited) $(BUILT_PRODUCTS_DIR)
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 5989NN7MH5
+
 schemes:
   DiaScanner:
     build:
@@ -113,9 +129,14 @@ schemes:
         DiaScanner: all
         DiaScannerLib: all
         DiaScannerUSBBridge: all
+        DiaScannerTests: testing
     run:
       config: Debug
       executable: DiaScanner
+    test:
+      config: Debug
+      targets:
+        - DiaScannerTests
     archive:
       config: Release
 

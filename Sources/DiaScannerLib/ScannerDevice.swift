@@ -287,13 +287,13 @@ public final class ScannerDevice: ObservableObject {
 
     // ─── Save ──────────────────────────────────────────────────────
 
-    public func saveImage(_ image: NSImage, to url: URL) throws {
-        guard let tiff   = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiff),
-              let png    = bitmap.representation(using: .png, properties: [:])
-        else {
-            throw ScannerError.invalidData("Failed to encode image as PNG")
-        }
-        try png.write(to: url)
+    public func saveImage(
+        _ image: NSImage,
+        to url: URL,
+        format: OutputFormat = .png,
+        quality: Double = 0.85
+    ) throws {
+        let data = try format.encode(image, quality: quality)
+        try data.write(to: url)
     }
 }

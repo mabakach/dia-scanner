@@ -7,32 +7,44 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0870A98193FE70D4B953FE83 /* NegativeFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6899F28A9D9B6CBF983DC18 /* NegativeFilterTests.swift */; };
+		09988444345B6B1EECCDB0C2 /* CaptureRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B712A216DA7364A671DF12C /* CaptureRenderingTests.swift */; };
 		1322401D272D5EE049B9FD1C /* NegativeFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E793D70621A0C27CABE5AD1F /* NegativeFilter.swift */; };
 		17086761AB4AE102BED7BCBA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78F3CD42DCB40854A4CF0BDB /* ContentView.swift */; };
 		1B43BB976247CF85336E8B59 /* DiaScannerUSBBridge.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		233BB20CAA10E723F200866F /* FrameParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFBD9953A132A144D53DEA08 /* FrameParserTests.swift */; };
 		3AC632B2E6601FE84B569029 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B12285B1CE3B799700F4ED /* main.swift */; };
 		3F1C6A1CC6F76E5DF93ECBA5 /* DiaScannerUSBBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; };
 		4DAAC8D42CF53A85B482054D /* OVUSBDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 665B91C9C3AC47024DA135A7 /* OVUSBDevice.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5943A6C3F2377DE6D9ED90C3 /* OV5621Sensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28772CF5165F4DAEEC105F22 /* OV5621Sensor.swift */; };
 		5C6EC8DB7287D2B28F55C68C /* DiaScannerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D256FB09928DD4C8BBE25A /* DiaScannerApp.swift */; };
 		5D790B2DED0A51D150050EFB /* OV2640Sensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */; };
+		60BB50798E713A3B96C0495D /* BrightnessContrastFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14B40F2905464C9F502C445 /* BrightnessContrastFilter.swift */; };
 		61661CCF95462A092BCA0C84 /* FrameParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD64D5E149B08FB955F288C /* FrameParser.swift */; };
+		6514408E40761BD75890AA99 /* BayerDemosaicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79226AEE39F0DFF4B9EF71AE /* BayerDemosaicTests.swift */; };
 		695331B7AAB8C503A5945498 /* DiaScannerUSBBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; };
+		6CED7525EBBCF910F8EB5AFE /* RGBHistogram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F86450A636B87F70F5DE037 /* RGBHistogram.swift */; };
 		6E1C8FE51E2048CEEC4DA510 /* DiaScannerLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		7115ABE0B4CE9F2CEEA8D23A /* DiaScannerLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		75C6A053B51F4B6B4BC5413D /* USBTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0F908EEE6F8108FF8A0FD5 /* USBTransport.swift */; };
 		87036B952468B91B124043EF /* BayerDemosaic.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7D87F3B45F90E06FA8AC70 /* BayerDemosaic.swift */; };
+		8C7F5FFFB3FCF15262D1BEB4 /* BrightnessContrastFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 422496A9C4BBE5AB80EE405D /* BrightnessContrastFilterTests.swift */; };
+		9071E33673CE7D4717999DBE /* OutputFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3B3761984994874149CD89 /* OutputFormatTests.swift */; };
+		A321523F509B4ECD50A60495 /* ImageTransformTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3D4EDB7BE51965D00C57BAF /* ImageTransformTests.swift */; };
+		A5A745A1CFF879EF87141401 /* ImageTransform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82175549A49868FDA36075C8 /* ImageTransform.swift */; };
+		B15101E7202790BE7FC01B85 /* OutputFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69A696BE428EC60979C37C09 /* OutputFormat.swift */; };
 		B8F990BE77FE10D07A5393CC /* DiaScannerLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; };
 		BE4191F6E73D8C1652C1F0EB /* OVUSBDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 32F17F0D8B1F3A8CE552FE26 /* OVUSBDevice.m */; };
 		C047A577686F87724BEDA90F /* DiaScannerUSBBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; };
 		C160B564E876B06D1F88E6C1 /* DiaScannerLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; };
 		C9EEE1C6CFB7F6CD68E72ED9 /* OV550Controller.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */; };
+		D055C555FC2944757514C1CE /* OV550ControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30869AA177B726D6DD4DA8B9 /* OV550ControllerTests.swift */; };
+		D4A4482352E9CFFD90491951 /* PositiveFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B23B226451C784C2526011 /* PositiveFilterTests.swift */; };
 		D4E93FB72DAB7A8324B74405 /* ScannerDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20A0C5B9FDDFBF52DD75FB9 /* ScannerDevice.swift */; };
+		D5F1DC79898C7A27C3390B88 /* PositiveFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C2A3206045478E79E865CC /* PositiveFilter.swift */; };
 		D9677F56A5336796D8E3D1C6 /* IOKitUSBTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */; };
 		DE37B9B6B572AF3E8EA0F6B8 /* DiaScannerUSBBridge.h in Headers */ = {isa = PBXBuildFile; fileRef = D76187445B1E91FA13C2958D /* DiaScannerUSBBridge.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		4A7BC3E91F5D26081E7A0B3C /* ImageTransform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2E5A8B0F4D7316C5E8B19F /* ImageTransform.swift */; };
-		48D706C744ED4649BD0D3B29 /* PositiveFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0A825131FC4A73860E088A /* PositiveFilter.swift */; };
-		AAC1CC59838A4023AD383A5B /* RGBHistogram.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02E0252249E4C5FA4DF8558 /* RGBHistogram.swift */; };
-		FF391B78892E4B41BAC865B5 /* BrightnessContrastFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17D138ED5E1D4DD1A24F349A /* BrightnessContrastFilter.swift */; };
+		E28F7E6C35DD38EA56AFB933 /* DiaScannerLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,6 +76,13 @@
 			remoteGlobalIDString = 817BA2CFA4EC835E4A7BD616;
 			remoteInfo = DiaScannerUSBBridge;
 		};
+		DFE325D0DA8C63304B8DD3D0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0360617EEBEEA24B60A4AE3F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FB64F0691E7445E93D624DDF;
+			remoteInfo = DiaScannerLib;
+		};
 		E2FA1BDB6752FC4CA3F6F6D7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0360617EEBEEA24B60A4AE3F /* Project object */;
@@ -74,6 +93,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		837BB3FA15683806EB3EE81E /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				7115ABE0B4CE9F2CEEA8D23A /* DiaScannerLib.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FAE4A1F2FC2FB092B935DBD0 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -89,32 +119,43 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1B712A216DA7364A671DF12C /* CaptureRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureRenderingTests.swift; sourceTree = "<group>"; };
 		28772CF5165F4DAEEC105F22 /* OV5621Sensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV5621Sensor.swift; sourceTree = "<group>"; };
+		30869AA177B726D6DD4DA8B9 /* OV550ControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV550ControllerTests.swift; sourceTree = "<group>"; };
 		32F17F0D8B1F3A8CE552FE26 /* OVUSBDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OVUSBDevice.m; sourceTree = "<group>"; };
+		422496A9C4BBE5AB80EE405D /* BrightnessContrastFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrightnessContrastFilterTests.swift; sourceTree = "<group>"; };
+		50C2A3206045478E79E865CC /* PositiveFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositiveFilter.swift; sourceTree = "<group>"; };
 		53B12285B1CE3B799700F4ED /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		5F86450A636B87F70F5DE037 /* RGBHistogram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RGBHistogram.swift; sourceTree = "<group>"; };
 		665B91C9C3AC47024DA135A7 /* OVUSBDevice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OVUSBDevice.h; sourceTree = "<group>"; };
+		69A696BE428EC60979C37C09 /* OutputFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputFormat.swift; sourceTree = "<group>"; };
 		6EBC27D8B31BF46D1F66F885 /* DiaScannerCLI */ = {isa = PBXFileReference; includeInIndex = 0; path = DiaScannerCLI; sourceTree = BUILT_PRODUCTS_DIR; };
 		72C2A9483D5D31BADC6B292B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		730F52999DC9033C031FDB76 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		78F3CD42DCB40854A4CF0BDB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		79226AEE39F0DFF4B9EF71AE /* BayerDemosaicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BayerDemosaicTests.swift; sourceTree = "<group>"; };
+		7E3B3761984994874149CD89 /* OutputFormatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputFormatTests.swift; sourceTree = "<group>"; };
+		82175549A49868FDA36075C8 /* ImageTransform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTransform.swift; sourceTree = "<group>"; };
 		88DE7040ECAC826F57315125 /* DiaScannerLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DiaScannerLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		98C8F508B06CFB39E02E1A0C /* DiaScannerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DiaScannerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DiaScannerUSBBridge.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20A0C5B9FDDFBF52DD75FB9 /* ScannerDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerDevice.swift; sourceTree = "<group>"; };
 		A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV550Controller.swift; sourceTree = "<group>"; };
 		A8D256FB09928DD4C8BBE25A /* DiaScannerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaScannerApp.swift; sourceTree = "<group>"; };
 		BCD64D5E149B08FB955F288C /* FrameParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameParser.swift; sourceTree = "<group>"; };
+		BFBD9953A132A144D53DEA08 /* FrameParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameParserTests.swift; sourceTree = "<group>"; };
 		C397CC311CA9A0673507C997 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D5B23B226451C784C2526011 /* PositiveFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositiveFilterTests.swift; sourceTree = "<group>"; };
 		D76187445B1E91FA13C2958D /* DiaScannerUSBBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DiaScannerUSBBridge.h; sourceTree = "<group>"; };
 		E137F6D10BA2FE6847EDABBC /* DiaScanner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiaScanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E14B40F2905464C9F502C445 /* BrightnessContrastFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrightnessContrastFilter.swift; sourceTree = "<group>"; };
+		E3D4EDB7BE51965D00C57BAF /* ImageTransformTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTransformTests.swift; sourceTree = "<group>"; };
 		E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOKitUSBTransport.swift; sourceTree = "<group>"; };
 		E793D70621A0C27CABE5AD1F /* NegativeFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NegativeFilter.swift; sourceTree = "<group>"; };
 		EB7D87F3B45F90E06FA8AC70 /* BayerDemosaic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BayerDemosaic.swift; sourceTree = "<group>"; };
 		EF0F908EEE6F8108FF8A0FD5 /* USBTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBTransport.swift; sourceTree = "<group>"; };
 		F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV2640Sensor.swift; sourceTree = "<group>"; };
-		9C2E5A8B0F4D7316C5E8B19F /* ImageTransform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTransform.swift; sourceTree = "<group>"; };
-		1F0A825131FC4A73860E088A /* PositiveFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositiveFilter.swift; sourceTree = "<group>"; };
-		D02E0252249E4C5FA4DF8558 /* RGBHistogram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RGBHistogram.swift; sourceTree = "<group>"; };
-		17D138ED5E1D4DD1A24F349A /* BrightnessContrastFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrightnessContrastFilter.swift; sourceTree = "<group>"; };
+		F6899F28A9D9B6CBF983DC18 /* NegativeFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NegativeFilterTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +185,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C48D5FEB11138F6D58188027 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E28F7E6C35DD38EA56AFB933 /* DiaScannerLib.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -153,6 +202,22 @@
 				53B12285B1CE3B799700F4ED /* main.swift */,
 			);
 			path = DiaScannerCLI;
+			sourceTree = "<group>";
+		};
+		3210FDE47DCF36EBBCB76C8A /* DiaScannerTests */ = {
+			isa = PBXGroup;
+			children = (
+				79226AEE39F0DFF4B9EF71AE /* BayerDemosaicTests.swift */,
+				422496A9C4BBE5AB80EE405D /* BrightnessContrastFilterTests.swift */,
+				1B712A216DA7364A671DF12C /* CaptureRenderingTests.swift */,
+				BFBD9953A132A144D53DEA08 /* FrameParserTests.swift */,
+				E3D4EDB7BE51965D00C57BAF /* ImageTransformTests.swift */,
+				F6899F28A9D9B6CBF983DC18 /* NegativeFilterTests.swift */,
+				7E3B3761984994874149CD89 /* OutputFormatTests.swift */,
+				30869AA177B726D6DD4DA8B9 /* OV550ControllerTests.swift */,
+				D5B23B226451C784C2526011 /* PositiveFilterTests.swift */,
+			);
+			path = DiaScannerTests;
 			sourceTree = "<group>";
 		};
 		3D4AE874214652419D6780B4 /* DiaScannerUSBBridge */ = {
@@ -171,26 +236,36 @@
 				E137F6D10BA2FE6847EDABBC /* DiaScanner.app */,
 				6EBC27D8B31BF46D1F66F885 /* DiaScannerCLI */,
 				88DE7040ECAC826F57315125 /* DiaScannerLib.framework */,
+				98C8F508B06CFB39E02E1A0C /* DiaScannerTests.xctest */,
 				99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		539852BB58E88453C2FE2DBB /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				3210FDE47DCF36EBBCB76C8A /* DiaScannerTests */,
+			);
+			path = Tests;
 			sourceTree = "<group>";
 		};
 		8665A9EFAED72D825D4CF156 /* DiaScannerLib */ = {
 			isa = PBXGroup;
 			children = (
 				EB7D87F3B45F90E06FA8AC70 /* BayerDemosaic.swift */,
+				E14B40F2905464C9F502C445 /* BrightnessContrastFilter.swift */,
 				BCD64D5E149B08FB955F288C /* FrameParser.swift */,
+				82175549A49868FDA36075C8 /* ImageTransform.swift */,
 				C397CC311CA9A0673507C997 /* Info.plist */,
-				9C2E5A8B0F4D7316C5E8B19F /* ImageTransform.swift */,
 				E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */,
-				1F0A825131FC4A73860E088A /* PositiveFilter.swift */,
-				D02E0252249E4C5FA4DF8558 /* RGBHistogram.swift */,
-				17D138ED5E1D4DD1A24F349A /* BrightnessContrastFilter.swift */,
 				E793D70621A0C27CABE5AD1F /* NegativeFilter.swift */,
+				69A696BE428EC60979C37C09 /* OutputFormat.swift */,
 				A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */,
 				F45D04D16958EE6EE02BD178 /* OV2640Sensor.swift */,
 				28772CF5165F4DAEEC105F22 /* OV5621Sensor.swift */,
+				50C2A3206045478E79E865CC /* PositiveFilter.swift */,
+				5F86450A636B87F70F5DE037 /* RGBHistogram.swift */,
 				A20A0C5B9FDDFBF52DD75FB9 /* ScannerDevice.swift */,
 				EF0F908EEE6F8108FF8A0FD5 /* USBTransport.swift */,
 			);
@@ -212,6 +287,7 @@
 			isa = PBXGroup;
 			children = (
 				98E387C3DEA04014254A38BD /* Sources */,
+				539852BB58E88453C2FE2DBB /* Tests */,
 				4722F6FB8F09C8294C28C97E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -288,6 +364,26 @@
 			productReference = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */;
 			productType = "com.apple.product-type.framework";
 		};
+		BB5FD89260905067F15F5A3C /* DiaScannerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6E15A1EA692DB554DDACBF92 /* Build configuration list for PBXNativeTarget "DiaScannerTests" */;
+			buildPhases = (
+				F7BB0054A2A83B6DF8957C4D /* Sources */,
+				C48D5FEB11138F6D58188027 /* Frameworks */,
+				837BB3FA15683806EB3EE81E /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6FDE95050BBAE6AD8EB3D333 /* PBXTargetDependency */,
+			);
+			name = DiaScannerTests;
+			packageProductDependencies = (
+			);
+			productName = DiaScannerTests;
+			productReference = 98C8F508B06CFB39E02E1A0C /* DiaScannerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		D1A879AF2D308B32F5AAA7E7 /* DiaScanner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4503075EA223666F4F38E5AB /* Build configuration list for PBXNativeTarget "DiaScanner" */;
@@ -341,6 +437,10 @@
 						DevelopmentTeam = 5989NN7MH5;
 						ProvisioningStyle = Automatic;
 					};
+					BB5FD89260905067F15F5A3C = {
+						DevelopmentTeam = 5989NN7MH5;
+						ProvisioningStyle = Automatic;
+					};
 					D1A879AF2D308B32F5AAA7E7 = {
 						DevelopmentTeam = 5989NN7MH5;
 						ProvisioningStyle = Automatic;
@@ -368,6 +468,7 @@
 				D1A879AF2D308B32F5AAA7E7 /* DiaScanner */,
 				0E4CF73FBA53A583BABA7CF9 /* DiaScannerCLI */,
 				FB64F0691E7445E93D624DDF /* DiaScannerLib */,
+				BB5FD89260905067F15F5A3C /* DiaScannerTests */,
 				817BA2CFA4EC835E4A7BD616 /* DiaScannerUSBBridge */,
 			);
 		};
@@ -387,16 +488,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				87036B952468B91B124043EF /* BayerDemosaic.swift in Sources */,
+				60BB50798E713A3B96C0495D /* BrightnessContrastFilter.swift in Sources */,
 				61661CCF95462A092BCA0C84 /* FrameParser.swift in Sources */,
-				4A7BC3E91F5D26081E7A0B3C /* ImageTransform.swift in Sources */,
 				D9677F56A5336796D8E3D1C6 /* IOKitUSBTransport.swift in Sources */,
-				48D706C744ED4649BD0D3B29 /* PositiveFilter.swift in Sources */,
-				AAC1CC59838A4023AD383A5B /* RGBHistogram.swift in Sources */,
-				FF391B78892E4B41BAC865B5 /* BrightnessContrastFilter.swift in Sources */,
+				A5A745A1CFF879EF87141401 /* ImageTransform.swift in Sources */,
 				1322401D272D5EE049B9FD1C /* NegativeFilter.swift in Sources */,
 				5D790B2DED0A51D150050EFB /* OV2640Sensor.swift in Sources */,
 				C9EEE1C6CFB7F6CD68E72ED9 /* OV550Controller.swift in Sources */,
 				5943A6C3F2377DE6D9ED90C3 /* OV5621Sensor.swift in Sources */,
+				B15101E7202790BE7FC01B85 /* OutputFormat.swift in Sources */,
+				D5F1DC79898C7A27C3390B88 /* PositiveFilter.swift in Sources */,
+				6CED7525EBBCF910F8EB5AFE /* RGBHistogram.swift in Sources */,
 				D4E93FB72DAB7A8324B74405 /* ScannerDevice.swift in Sources */,
 				75C6A053B51F4B6B4BC5413D /* USBTransport.swift in Sources */,
 			);
@@ -416,6 +518,22 @@
 			files = (
 				17086761AB4AE102BED7BCBA /* ContentView.swift in Sources */,
 				5C6EC8DB7287D2B28F55C68C /* DiaScannerApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F7BB0054A2A83B6DF8957C4D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6514408E40761BD75890AA99 /* BayerDemosaicTests.swift in Sources */,
+				8C7F5FFFB3FCF15262D1BEB4 /* BrightnessContrastFilterTests.swift in Sources */,
+				09988444345B6B1EECCDB0C2 /* CaptureRenderingTests.swift in Sources */,
+				233BB20CAA10E723F200866F /* FrameParserTests.swift in Sources */,
+				A321523F509B4ECD50A60495 /* ImageTransformTests.swift in Sources */,
+				0870A98193FE70D4B953FE83 /* NegativeFilterTests.swift in Sources */,
+				D055C555FC2944757514C1CE /* OV550ControllerTests.swift in Sources */,
+				9071E33673CE7D4717999DBE /* OutputFormatTests.swift in Sources */,
+				D4A4482352E9CFFD90491951 /* PositiveFilterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -441,6 +559,11 @@
 			isa = PBXTargetDependency;
 			target = FB64F0691E7445E93D624DDF /* DiaScannerLib */;
 			targetProxy = 6C20B7020F9B681BC374ED52 /* PBXContainerItemProxy */;
+		};
+		6FDE95050BBAE6AD8EB3D333 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FB64F0691E7445E93D624DDF /* DiaScannerLib */;
+			targetProxy = DFE325D0DA8C63304B8DD3D0 /* PBXContainerItemProxy */;
 		};
 		D939D478D943241963F013AF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -512,6 +635,26 @@
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
+		};
+		1F6E2622C025B2AF7D802A28 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 5989NN7MH5;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScannerTests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
 		};
 		2F2052D90B19DCE485BB840A /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -607,6 +750,26 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScannerCLI;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		B04C069549C8F3E7A1A5E141 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 5989NN7MH5;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.mabaka.DiaScannerTests;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 6.0;
 			};
@@ -768,6 +931,15 @@
 			buildConfigurations = (
 				D735E63165EE8439618190BC /* Debug */,
 				E4BFB37B64E1EBA5E269AC65 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6E15A1EA692DB554DDACBF92 /* Build configuration list for PBXNativeTarget "DiaScannerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B04C069549C8F3E7A1A5E141 /* Debug */,
+				1F6E2622C025B2AF7D802A28 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

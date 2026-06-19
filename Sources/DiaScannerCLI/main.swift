@@ -11,14 +11,33 @@ import DiaScannerLib
 import DiaScannerUSBBridge
 
 // CLI runner — captures one full 2592×1680 SBGGR8 frame from the OV5621 sensor
-// using the gspca_ov534_9 port. Saves raw Bayer to <path>.raw and demosaiced
-// PNG to <path>.png.
+// using the gspca_ov534_9 port. Saves raw Bayer to <path>.raw and the demosaiced
+// image to <path>.<ext> in the chosen format.
 //
-// Usage: swift run DiaScannerCLI [output-path]
+// Usage: swift run DiaScannerCLI [output-path] [--format jpeg|png|bmp|tiff|jpeg2000] [--quality 1-100] [--negative]
 
-let cliArgs   = CommandLine.arguments.dropFirst()
+let cliArgs    = CommandLine.arguments.dropFirst()
 let isNegative = cliArgs.contains("--negative")
 let outputPath = cliArgs.filter { !$0.hasPrefix("--") }.first ?? "/tmp/diascanner_capture"
+
+func argValue(for flag: String) -> String? {
+    guard let idx = cliArgs.firstIndex(of: flag), cliArgs.index(after: idx) < cliArgs.endIndex
+    else { return nil }
+    return cliArgs[cliArgs.index(after: idx)]
+}
+
+let outputFormat: OutputFormat = {
+    guard let raw = argValue(for: "--format"),
+          let fmt = OutputFormat(rawValue: raw)
+    else { return .png }
+    return fmt
+}()
+
+let jpegQuality: Double = {
+    guard let raw = argValue(for: "--quality"), let pct = Double(raw)
+    else { return 85 }
+    return max(1, min(100, pct)) / 100.0
+}()
 
 func log(_ msg: String) {
     let ts = ISO8601DateFormatter().string(from: Date())
@@ -124,7 +143,7 @@ func run() throws {
     try raw.write(to: rawURL)
     log("CLI: raw Bayer saved to \(rawURL.path)")
 
-    // Demosaic and save PNG. OV5621 outputs BGGR Bayer pattern (SBGGR8).
+    // Demosaic and save. OV5621 outputs BGGR Bayer pattern (SBGGR8).
     let width  = OV5621Sensor.frameWidth
     let rowsAvailable = raw.count / width
     let height = min(OV5621Sensor.frameHeight, rowsAvailable)
@@ -132,13 +151,11 @@ func run() throws {
     let trimmed = raw.count == width * height ? Data(raw) : Data(raw.prefix(width * height))
     var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: height, pattern: .bggr)
     if isNegative { rgb = NegativeFilter.apply(to: rgb, width: width, height: height) }
-    if let img    = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height),
-       let tiff   = img.tiffRepresentation,
-       let bitmap = NSBitmapImageRep(data: tiff),
-       let png    = bitmap.representation(using: .png, properties: [:]) {
-        let pngURL = URL(fileURLWithPath: "\(outputPath).png")
-        try png.write(to: pngURL)
-        log("CLI: PNG saved to \(pngURL.path)")
+    if let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height) {
+        let imgURL = URL(fileURLWithPath: "\(outputPath).\(outputFormat.fileExtension)")
+        let data = try outputFormat.encode(img, quality: jpegQuality)
+        try data.write(to: imgURL)
+        log("CLI: \(outputFormat.displayName) saved to \(imgURL.path)")
     } else {
         log("CLI: demosaic/save failed")
     }
