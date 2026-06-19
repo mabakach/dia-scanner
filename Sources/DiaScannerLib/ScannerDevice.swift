@@ -26,6 +26,8 @@ public final class ScannerDevice: ObservableObject {
     @Published public var isNegativeMode    = false
     @Published public var vignetteK: Float  = PositiveFilter.defaultVignetteK
     @Published public var autoLevelsEnabled = true
+    @Published public var brightness: Float = 0.0
+    @Published public var contrast:   Float = 0.0
     @Published public var histogram: RGBHistogram?
 
     private var usbDevice:       OVUSBDevice?
@@ -46,6 +48,14 @@ public final class ScannerDevice: ObservableObject {
             .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
             .store(in: &cancellables)
         $autoLevelsEnabled
+            .dropFirst()
+            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
+            .store(in: &cancellables)
+        $brightness
+            .dropFirst()
+            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
+            .store(in: &cancellables)
+        $contrast
             .dropFirst()
             .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
             .store(in: &cancellables)
@@ -166,6 +176,8 @@ public final class ScannerDevice: ObservableObject {
                 let negative    = self.isNegativeMode
                 let vk          = self.vignetteK
                 let autoLevels  = self.autoLevelsEnabled
+                let bright      = self.brightness
+                let cont        = self.contrast
                 let result: (NSImage, RGBHistogram)? = await Task.detached(priority: .userInitiated) {
                     let rows = rawData.count / width
                     let h    = min(height, rows)
@@ -179,6 +191,10 @@ public final class ScannerDevice: ObservableObject {
                     } else {
                         rgb = PositiveFilter.apply(to: rgb, width: width, height: h, vignetteK: vk,
                                                    applyAutoLevels: autoLevels)
+                    }
+                    if bright != 0 || cont != 0 {
+                        rgb = BrightnessContrastFilter.apply(to: rgb, width: width, height: h,
+                                                             brightness: bright, contrast: cont)
                     }
                     let hist = RGBHistogram.compute(from: rgb, pixelCount: width * h)
                     guard let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h)
@@ -235,6 +251,8 @@ public final class ScannerDevice: ObservableObject {
         let negative   = isNegativeMode
         let vk         = vignetteK
         let autoLevels = autoLevelsEnabled
+        let bright     = brightness
+        let cont       = contrast
         let result: (NSImage, RGBHistogram)? = await Task.detached(priority: .userInitiated) {
             var rgb = BayerDemosaic.demosaic(raw, width: width, height: height, pattern: .bggr)
             if negative {
@@ -243,6 +261,10 @@ public final class ScannerDevice: ObservableObject {
             } else {
                 rgb = PositiveFilter.apply(to: rgb, width: width, height: height, vignetteK: vk,
                                            applyAutoLevels: autoLevels)
+            }
+            if bright != 0 || cont != 0 {
+                rgb = BrightnessContrastFilter.apply(to: rgb, width: width, height: height,
+                                                     brightness: bright, contrast: cont)
             }
             let hist = RGBHistogram.compute(from: rgb, pixelCount: width * height)
             guard let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height)

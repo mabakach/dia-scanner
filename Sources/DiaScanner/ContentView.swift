@@ -139,6 +139,27 @@ struct ContentView: View {
                     Toggle("Stretch", isOn: $scanner.autoLevelsEnabled)
                         .font(.caption2)
                         .disabled(scanner.histogram == nil)
+                    Text("Brightness & Contrast")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    HStack {
+                        Text("Brightness")
+                            .font(.caption2)
+                        Spacer()
+                        Text(String(format: "%+.2f", scanner.brightness))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $scanner.brightness, in: -1...1)
+                    HStack {
+                        Text("Contrast")
+                            .font(.caption2)
+                        Spacer()
+                        Text(String(format: "%+.2f", scanner.contrast))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $scanner.contrast, in: -1...1)
                     Text("Vignette")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
