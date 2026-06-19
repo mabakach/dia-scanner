@@ -172,7 +172,7 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                     Slider(value: $scanner.vignetteK, in: 0...0.9)
-                    Button("Reset Adjustments") {
+                    Button("Reset") {
                         scanner.resetAdjustments()
                     }
                     .font(.caption2)
