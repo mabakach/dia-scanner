@@ -259,7 +259,7 @@ private struct HistogramView: View {
                     (histogram.g, maxG, Color.green),
                     (histogram.b, maxB, Color.blue)
                 ] {
-                    let h = size.height * CGFloat(values[i]) / CGFloat(maxVal)
+                    let h = size.height * log(CGFloat(values[i]) + 1) / log(CGFloat(maxVal) + 1)
                     ctx.fill(
                         Path(CGRect(x: x, y: size.height - h, width: barW, height: h)),
                         with: .color(color.opacity(0.5))
