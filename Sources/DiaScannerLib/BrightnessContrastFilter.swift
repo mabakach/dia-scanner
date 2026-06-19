@@ -27,7 +27,7 @@ public enum BrightnessContrastFilter {
         let count = width * height * 3
         precondition(rgb.count >= count, "RGB data size mismatch")
 
-        let brightOffset    = brightness * 255.0
+        let brightOffset    = brightness * 100.0
         let contrastFactor  = contrast + 1.0
 
         var out = Data(count: count)
