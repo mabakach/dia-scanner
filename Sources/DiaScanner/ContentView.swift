@@ -132,14 +132,13 @@ struct ContentView: View {
                     Text("Adjustments")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    if let hist = scanner.histogram {
-                        Text("Histogram")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        HistogramView(histogram: hist)
-                        Toggle("Stretch", isOn: $scanner.autoLevelsEnabled)
-                            .font(.caption2)
-                    }
+                    Text("Histogram")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    HistogramView(histogram: scanner.histogram)
+                    Toggle("Stretch", isOn: $scanner.autoLevelsEnabled)
+                        .font(.caption2)
+                        .disabled(scanner.histogram == nil)
                     Text("Vignette")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -250,10 +249,11 @@ struct ContentView: View {
 }
 
 private struct HistogramView: View {
-    let histogram: RGBHistogram
+    let histogram: RGBHistogram?
 
     var body: some View {
         Canvas { ctx, size in
+            guard let histogram else { return }
             let maxR = max(1, histogram.r.max() ?? 1)
             let maxG = max(1, histogram.g.max() ?? 1)
             let maxB = max(1, histogram.b.max() ?? 1)
