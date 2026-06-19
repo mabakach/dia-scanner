@@ -89,6 +89,21 @@ final class NegativeFilterTests: XCTestCase {
         XCTAssertEqual(result, reference)
     }
 
+    func testApplyAutoLevelsFalseIsSimpleInvert() {
+        let input = Data([10, 20, 30, 100, 150, 200])
+        let out = NegativeFilter.apply(to: input, width: 2, height: 1, applyAutoLevels: false)
+        XCTAssertEqual(out, Data([245, 235, 225, 155, 105, 55]))
+    }
+
+    func testApplyAutoLevelsTrueIsDefaultBehavior() {
+        let w = 4, h = 4
+        var bytes = [UInt8](repeating: 0, count: w * h * 3)
+        for i in 0..<bytes.count { bytes[i] = UInt8(i % 200 + 30) }
+        let input = Data(bytes)
+        XCTAssertEqual(NegativeFilter.apply(to: input, width: w, height: h),
+                       NegativeFilter.apply(to: input, width: w, height: h, applyAutoLevels: true))
+    }
+
     func testLargeFrameDoesNotCrash() {
         let w = 2592, h = 1680
         let input = Data([UInt8](repeating: 42, count: w * h * 3))

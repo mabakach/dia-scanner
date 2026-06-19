@@ -127,6 +127,58 @@ struct ContentView: View {
 
                 Divider()
 
+                // Adjustments
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Adjustments")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("Histogram")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    HistogramView(histogram: scanner.histogram)
+                    Toggle("Stretch", isOn: $scanner.autoLevelsEnabled)
+                        .font(.caption2)
+                        .disabled(scanner.histogram == nil)
+                    Text("Brightness & Contrast")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    HStack {
+                        Text("Brightness")
+                            .font(.caption2)
+                        Spacer()
+                        Text(String(format: "%+.2f", scanner.brightness))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $scanner.brightness, in: -1...1)
+                    HStack {
+                        Text("Contrast")
+                            .font(.caption2)
+                        Spacer()
+                        Text(String(format: "%+.2f", scanner.contrast))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $scanner.contrast, in: -1...1)
+                    HStack {
+                        Text("Vignette")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(String(format: "%.2f", scanner.vignetteK))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $scanner.vignetteK, in: 0...0.9)
+                    Button("Reset") {
+                        scanner.resetAdjustments()
+                    }
+                    .font(.caption2)
+                    .frame(maxWidth: .infinity)
+                }
+
+                Divider()
+
                 // Image info
                 if let img = scanner.capturedImage {
                     VStack(alignment: .leading, spacing: 4) {
@@ -218,4 +270,35 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .frame(width: 900, height: 700)
+}
+
+private struct HistogramView: View {
+    let histogram: RGBHistogram?
+
+    var body: some View {
+        Canvas { ctx, size in
+            guard let histogram else { return }
+            let maxR = max(1, histogram.r.max() ?? 1)
+            let maxG = max(1, histogram.g.max() ?? 1)
+            let maxB = max(1, histogram.b.max() ?? 1)
+            let barW = max(size.width / 256, 1)
+            for i in 0..<256 {
+                let x = CGFloat(i) * barW
+                for (values, maxVal, color) in [
+                    (histogram.r, maxR, Color.red),
+                    (histogram.g, maxG, Color.green),
+                    (histogram.b, maxB, Color.blue)
+                ] {
+                    let h = size.height * log(CGFloat(values[i]) + 1) / log(CGFloat(maxVal) + 1)
+                    ctx.fill(
+                        Path(CGRect(x: x, y: size.height - h, width: barW, height: h)),
+                        with: .color(color.opacity(0.5))
+                    )
+                }
+            }
+        }
+        .frame(height: 64)
+        .background(Color.primary.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
 }

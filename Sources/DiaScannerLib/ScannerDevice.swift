@@ -23,7 +23,12 @@ public final class ScannerDevice: ObservableObject {
     @Published public var lastError: String?
     @Published public var capturedImage: NSImage?
     @Published public var liveFrame:     NSImage?
-    @Published public var isNegativeMode = false
+    @Published public var isNegativeMode    = false
+    @Published public var vignetteK: Float  = PositiveFilter.defaultVignetteK
+    @Published public var autoLevelsEnabled = true
+    @Published public var brightness: Float = 0.0
+    @Published public var contrast:   Float = 0.0
+    @Published public var histogram: RGBHistogram?
 
     private var usbDevice:       OVUSBDevice?
     private var transport:       IOKitUSBTransport?
@@ -36,9 +41,23 @@ public final class ScannerDevice: ObservableObject {
     public init() {
         $isNegativeMode
             .dropFirst()
-            .sink { [weak self] _ in
-                Task { [weak self] in await self?.renderCapturedImage() }
-            }
+            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
+            .store(in: &cancellables)
+        $vignetteK
+            .dropFirst()
+            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
+            .store(in: &cancellables)
+        $autoLevelsEnabled
+            .dropFirst()
+            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
+            .store(in: &cancellables)
+        $brightness
+            .dropFirst()
+            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
+            .store(in: &cancellables)
+        $contrast
+            .dropFirst()
+            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
             .store(in: &cancellables)
     }
 
@@ -111,6 +130,7 @@ public final class ScannerDevice: ObservableObject {
     public func disconnect() async {
         isConnected    = false
         liveFrame      = nil
+        histogram      = nil
         latestRawBayer = nil
         // Cancelling the consumer task ends the AsyncStream for-await loop automatically.
         streamTask?.cancel()
@@ -153,19 +173,37 @@ public final class ScannerDevice: ObservableObject {
         streamTask = Task {
             for await rawData in stream {
                 self.latestRawBayer = rawData
-                let negative = self.isNegativeMode
-                let image: NSImage? = await Task.detached(priority: .userInitiated) { () -> NSImage? in
+                let negative    = self.isNegativeMode
+                let vk          = self.vignetteK
+                let autoLevels  = self.autoLevelsEnabled
+                let bright      = self.brightness
+                let cont        = self.contrast
+                let result: (NSImage, RGBHistogram)? = await Task.detached(priority: .userInitiated) {
                     let rows = rawData.count / width
                     let h    = min(height, rows)
                     guard h > 0 else { return nil }
                     let trimmed = rawData.count == width * h
                         ? rawData : Data(rawData.prefix(width * h))
                     var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
-                    if negative { rgb = NegativeFilter.apply(to: rgb, width: width, height: h) }
-                    return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h)
+                    if negative {
+                        rgb = PositiveFilter.applyVignetting(to: rgb, width: width, height: h, vignetteK: vk)
+                        rgb = NegativeFilter.apply(to: rgb, width: width, height: h, applyAutoLevels: autoLevels)
+                    } else {
+                        rgb = PositiveFilter.apply(to: rgb, width: width, height: h, vignetteK: vk,
+                                                   applyAutoLevels: autoLevels)
+                    }
+                    if bright != 0 || cont != 0 {
+                        rgb = BrightnessContrastFilter.apply(to: rgb, width: width, height: h,
+                                                             brightness: bright, contrast: cont)
+                    }
+                    let hist = RGBHistogram.compute(from: rgb, pixelCount: width * h)
+                    guard let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h)
+                    else { return nil }
+                    return (img, hist)
                 }.value
-                guard !Task.isCancelled, let image else { continue }
-                self.liveFrame = image
+                guard !Task.isCancelled, let (image, hist) = result else { continue }
+                self.liveFrame  = image
+                self.histogram  = hist
             }
         }
     }
@@ -204,20 +242,47 @@ public final class ScannerDevice: ObservableObject {
         Self.log("captureFrame: raw Bayer frame captured")
     }
 
-    // Renders capturedImage from capturedRawBayer using the current isNegativeMode.
-    // Called at capture time and whenever isNegativeMode changes while raw data is held.
+    // Renders capturedImage from capturedRawBayer using the current filter settings.
+    // Called at capture time and whenever any filter setting changes while raw data is held.
     private func renderCapturedImage() async {
         guard let raw = capturedRawBayer else { return }
-        let width    = ScannerDevice.frameWidth
-        let height   = ScannerDevice.frameHeight
-        let negative = isNegativeMode
-        let image: NSImage? = await Task.detached(priority: .userInitiated) {
+        let width      = ScannerDevice.frameWidth
+        let height     = ScannerDevice.frameHeight
+        let negative   = isNegativeMode
+        let vk         = vignetteK
+        let autoLevels = autoLevelsEnabled
+        let bright     = brightness
+        let cont       = contrast
+        let result: (NSImage, RGBHistogram)? = await Task.detached(priority: .userInitiated) {
             var rgb = BayerDemosaic.demosaic(raw, width: width, height: height, pattern: .bggr)
-            if negative { rgb = NegativeFilter.apply(to: rgb, width: width, height: height) }
-            return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height)
+            if negative {
+                rgb = PositiveFilter.applyVignetting(to: rgb, width: width, height: height, vignetteK: vk)
+                rgb = NegativeFilter.apply(to: rgb, width: width, height: height, applyAutoLevels: autoLevels)
+            } else {
+                rgb = PositiveFilter.apply(to: rgb, width: width, height: height, vignetteK: vk,
+                                           applyAutoLevels: autoLevels)
+            }
+            if bright != 0 || cont != 0 {
+                rgb = BrightnessContrastFilter.apply(to: rgb, width: width, height: height,
+                                                     brightness: bright, contrast: cont)
+            }
+            let hist = RGBHistogram.compute(from: rgb, pixelCount: width * height)
+            guard let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height)
+            else { return nil }
+            return (img, hist)
         }.value
-        guard let image else { return }
+        guard let (image, hist) = result else { return }
         capturedImage = image
+        histogram     = hist
+    }
+
+    // ─── Adjustments ───────────────────────────────────────────────
+
+    public func resetAdjustments() {
+        autoLevelsEnabled = true
+        brightness        = 0.0
+        contrast          = 0.0
+        vignetteK         = PositiveFilter.defaultVignetteK
     }
 
     // ─── Save ──────────────────────────────────────────────────────
