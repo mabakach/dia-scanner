@@ -127,6 +127,26 @@ struct ContentView: View {
 
                 Divider()
 
+                // Positive filter
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Positive Filter")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack {
+                        Text("Vignette")
+                            .font(.caption2)
+                        Spacer()
+                        Text(String(format: "%.2f", scanner.vignetteK))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $scanner.vignetteK, in: 0...0.9)
+                }
+                .disabled(scanner.isNegativeMode)
+                .opacity(scanner.isNegativeMode ? 0.4 : 1.0)
+
+                Divider()
+
                 // Image info
                 if let img = scanner.capturedImage {
                     VStack(alignment: .leading, spacing: 4) {

@@ -18,13 +18,15 @@ import Foundation
 /// overall exposure without being thrown off by dust or scratch outliers.
 public enum PositiveFilter {
 
-    /// Radial vignetting coefficient.  `0` = no correction; `0.5` gives the image corners
-    /// a 2× gain relative to the centre.  Increase if edges still look dark after correction.
-    public static let vignetteK: Float = 0.5
+    /// Default radial vignetting coefficient.  `0` = no correction; `0.5` gives the image
+    /// corners a 2× gain relative to the centre.
+    public static let defaultVignetteK: Float = 0.5
 
     /// Applies radial vignetting correction and per-channel auto-levels to packed RGB data.
     /// Input: 3 bytes per pixel, R-G-B order, `width × height` pixels.
-    public static func apply(to rgb: Data, width: Int, height: Int) -> Data {
+    /// - Parameter vignetteK: Correction strength; `0` = none, up to `0.9` (10× corner gain).
+    public static func apply(to rgb: Data, width: Int, height: Int,
+                             vignetteK: Float = defaultVignetteK) -> Data {
         let pixelCount = width * height
         let count      = pixelCount * 3
         precondition(rgb.count >= count, "RGB data size mismatch")
@@ -48,7 +50,6 @@ public enum PositiveFilter {
                     for col in 0..<width {
                         let dx  = Float(col) - cx
                         let r2  = maxR2 > 0 ? (dx * dx + dy * dy) / maxR2 : 0
-                        // Prevent division by zero; at corner with k=1 denominator → 0.
                         let gain = 1.0 / max(0.001, 1.0 - vignetteK * r2)
                         let i   = (row * width + col) * 3
                         let r   = clampByte(Float(src[i])     * gain)

@@ -24,6 +24,7 @@ public final class ScannerDevice: ObservableObject {
     @Published public var capturedImage: NSImage?
     @Published public var liveFrame:     NSImage?
     @Published public var isNegativeMode = false
+    @Published public var vignetteK: Float = PositiveFilter.defaultVignetteK
 
     private var usbDevice:       OVUSBDevice?
     private var transport:       IOKitUSBTransport?
@@ -36,9 +37,11 @@ public final class ScannerDevice: ObservableObject {
     public init() {
         $isNegativeMode
             .dropFirst()
-            .sink { [weak self] _ in
-                Task { [weak self] in await self?.renderCapturedImage() }
-            }
+            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
+            .store(in: &cancellables)
+        $vignetteK
+            .dropFirst()
+            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
             .store(in: &cancellables)
     }
 
@@ -154,6 +157,7 @@ public final class ScannerDevice: ObservableObject {
             for await rawData in stream {
                 self.latestRawBayer = rawData
                 let negative = self.isNegativeMode
+                let vk       = self.vignetteK
                 let image: NSImage? = await Task.detached(priority: .userInitiated) { () -> NSImage? in
                     let rows = rawData.count / width
                     let h    = min(height, rows)
@@ -164,7 +168,7 @@ public final class ScannerDevice: ObservableObject {
                     if negative {
                         rgb = NegativeFilter.apply(to: rgb, width: width, height: h)
                     } else {
-                        rgb = PositiveFilter.apply(to: rgb, width: width, height: h)
+                        rgb = PositiveFilter.apply(to: rgb, width: width, height: h, vignetteK: vk)
                     }
                     return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h)
                 }.value
@@ -208,19 +212,20 @@ public final class ScannerDevice: ObservableObject {
         Self.log("captureFrame: raw Bayer frame captured")
     }
 
-    // Renders capturedImage from capturedRawBayer using the current isNegativeMode.
-    // Called at capture time and whenever isNegativeMode changes while raw data is held.
+    // Renders capturedImage from capturedRawBayer using the current isNegativeMode / vignetteK.
+    // Called at capture time and whenever those settings change while raw data is held.
     private func renderCapturedImage() async {
         guard let raw = capturedRawBayer else { return }
         let width    = ScannerDevice.frameWidth
         let height   = ScannerDevice.frameHeight
         let negative = isNegativeMode
+        let vk       = vignetteK
         let image: NSImage? = await Task.detached(priority: .userInitiated) {
             var rgb = BayerDemosaic.demosaic(raw, width: width, height: height, pattern: .bggr)
             if negative {
                 rgb = NegativeFilter.apply(to: rgb, width: width, height: height)
             } else {
-                rgb = PositiveFilter.apply(to: rgb, width: width, height: height)
+                rgb = PositiveFilter.apply(to: rgb, width: width, height: height, vignetteK: vk)
             }
             return BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height)
         }.value
