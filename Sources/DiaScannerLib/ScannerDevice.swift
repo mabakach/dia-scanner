@@ -276,6 +276,15 @@ public final class ScannerDevice: ObservableObject {
         histogram     = hist
     }
 
+    // ─── Adjustments ───────────────────────────────────────────────
+
+    public func resetAdjustments() {
+        autoLevelsEnabled = true
+        brightness        = 0.0
+        contrast          = 0.0
+        vignetteK         = PositiveFilter.defaultVignetteK
+    }
+
     // ─── Save ──────────────────────────────────────────────────────
 
     public func saveImage(_ image: NSImage, to url: URL) throws {
