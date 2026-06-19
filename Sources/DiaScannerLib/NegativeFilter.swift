@@ -68,7 +68,7 @@ public enum NegativeFilter {
 
     // Returns the value at which `frac` of pixels fall at or below.
     private static func percentile(_ hist: [Int], _ total: Int, _ frac: Double) -> Int {
-        let threshold = Int(Double(total) * frac)
+        let threshold = max(1, Int(Double(total) * frac))
         var cumulative = 0
         for i in 0..<256 {
             cumulative += hist[i]

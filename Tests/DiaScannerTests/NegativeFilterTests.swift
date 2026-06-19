@@ -28,6 +28,23 @@ final class NegativeFilterTests: XCTestCase {
         XCTAssertEqual(out.count, w * h * 3)
     }
 
+    // Regression for issue #10: Int(total * 0.01) truncates to 0 when total < 100.
+    // With threshold == 0, cumulative (starts at 0) satisfies >= 0 on the very first
+    // iteration regardless of whether any pixel lives in bin 0, so lo is always forced
+    // to 0 → wrong max-stretch. The fix clamps threshold to at least 1.
+    //
+    // Setup: 5×5 = 25 pixels, all R/G/B = 100. Inverted values all land on bin 155;
+    // bin 0 is empty. With the bug: lo=0, hi=155 → output ≈ 255 (max-stretch).
+    // With the fix: lo=hi=155 → lo==hi fallback → output = 0 (uniform → black).
+    func testPercentileThresholdClampsToOneForSmallImages() {
+        let w = 5, h = 5
+        let input = Data([UInt8](repeating: 100, count: w * h * 3))
+        let out = NegativeFilter.apply(to: input, width: w, height: h)
+        XCTAssertEqual(Int(out[0]), 0, "lo must not be forced to bin 0 when no pixel is there")
+        XCTAssertEqual(Int(out[1]), 0)
+        XCTAssertEqual(Int(out[2]), 0)
+    }
+
     // A two-pixel image: one pixel at value 0 (inverts to 255) and one at 255
     // (inverts to 0). With exactly these two values the histogram has entries at
     // 0 and 255. The 1% percentile clips to 0, the 99% percentile clips to 255,
@@ -131,7 +148,7 @@ final class NegativeFilterTests: XCTestCase {
     }
 
     private func refPercentile(_ hist: [Int], _ total: Int, _ frac: Double) -> Int {
-        let threshold = Int(Double(total) * frac)
+        let threshold = max(1, Int(Double(total) * frac))
         var cumulative = 0
         for i in 0..<256 { cumulative += hist[i]; if cumulative >= threshold { return i } }
         return 255
