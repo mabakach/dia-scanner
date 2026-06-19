@@ -133,8 +133,14 @@ struct ContentView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     if let hist = scanner.histogram {
+                        Text("Histogram")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                         HistogramView(histogram: hist)
                     }
+                    Text("Vignette")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                     HStack {
                         Text("Strength")
                             .font(.caption2)
