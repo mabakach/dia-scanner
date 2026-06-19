@@ -222,10 +222,7 @@ public final class ScannerDevice: ObservableObject {
 
     // ─── Save ──────────────────────────────────────────────────────
 
-    public func saveImage(to url: URL) throws {
-        guard let image = capturedImage else {
-            throw ScannerError.invalidData("No captured image to save")
-        }
+    public func saveImage(_ image: NSImage, to url: URL) throws {
         guard let tiff   = image.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: tiff),
               let png    = bitmap.representation(using: .png, properties: [:])
