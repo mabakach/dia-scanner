@@ -13,6 +13,7 @@ struct ContentView: View {
     @StateObject private var scanner = ScannerDevice()
     @State private var showSavePanel = false
     @State private var saveURL: URL?
+    @State private var imageTransform = ImageTransform()
 
     var body: some View {
         HSplitView {
@@ -86,6 +87,46 @@ struct ContentView: View {
 
                 Divider()
 
+                // Transform buttons
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Transform")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Button {
+                            imageTransform.rotateLeft()
+                        } label: {
+                            Image(systemName: "rotate.left")
+                        }
+                        .help("Rotate 90° left")
+
+                        Button {
+                            imageTransform.rotateRight()
+                        } label: {
+                            Image(systemName: "rotate.right")
+                        }
+                        .help("Rotate 90° right")
+
+                        Button {
+                            imageTransform.toggleMirrorHorizontal()
+                        } label: {
+                            Image(systemName: "flip.horizontal")
+                        }
+                        .help("Mirror horizontal")
+
+                        Button {
+                            imageTransform.toggleMirrorVertical()
+                        } label: {
+                            Image(systemName: "flip.horizontal")
+                                .rotationEffect(.degrees(90))
+                        }
+                        .help("Mirror vertical")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Divider()
+
                 // Image info
                 if let img = scanner.capturedImage {
                     VStack(alignment: .leading, spacing: 4) {
@@ -127,11 +168,21 @@ struct ContentView: View {
                     Image(nsImage: frame)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
+                        .rotationEffect(.degrees(Double(imageTransform.rotation)))
+                        .scaleEffect(
+                            x: imageTransform.mirrorHorizontal ? -1 : 1,
+                            y: imageTransform.mirrorVertical   ? -1 : 1
+                        )
                         .padding(8)
                 } else if let img = scanner.capturedImage {
                     Image(nsImage: img)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
+                        .rotationEffect(.degrees(Double(imageTransform.rotation)))
+                        .scaleEffect(
+                            x: imageTransform.mirrorHorizontal ? -1 : 1,
+                            y: imageTransform.mirrorVertical   ? -1 : 1
+                        )
                         .padding(8)
                 } else {
                     VStack(spacing: 8) {
