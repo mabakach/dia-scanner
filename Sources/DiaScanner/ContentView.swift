@@ -137,6 +137,8 @@ struct ContentView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                         HistogramView(histogram: hist)
+                        Toggle("Stretch", isOn: $scanner.autoLevelsEnabled)
+                            .font(.caption2)
                     }
                     Text("Vignette")
                         .font(.caption2)
@@ -150,8 +152,6 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                     Slider(value: $scanner.vignetteK, in: 0...0.9)
-                    Toggle("Auto-Levels", isOn: $scanner.autoLevelsEnabled)
-                        .font(.caption2)
                 }
 
                 Divider()
