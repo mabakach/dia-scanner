@@ -160,12 +160,10 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                     Slider(value: $scanner.contrast, in: -1...1)
-                    Text("Vignette")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
                     HStack {
-                        Text("Strength")
+                        Text("Vignette")
                             .font(.caption2)
+                            .foregroundStyle(.secondary)
                         Spacer()
                         Text(String(format: "%.2f", scanner.vignetteK))
                             .font(.caption2.monospacedDigit())
