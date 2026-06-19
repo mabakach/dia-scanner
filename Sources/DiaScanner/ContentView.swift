@@ -34,7 +34,7 @@ struct ContentView: View {
                 }
 
                 // Connect / Disconnect
-                Button(scanner.isConnected ? "Disconnect" : "Connect Scanner") {
+                Button {
                     Task {
                         if scanner.isConnected {
                             await scanner.disconnect()
@@ -42,6 +42,9 @@ struct ContentView: View {
                             await scanner.connect()
                         }
                     }
+                } label: {
+                    Text(scanner.isConnected ? "Disconnect" : "Connect Scanner")
+                        .frame(maxWidth: .infinity)
                 }
                 .disabled(scanner.isBusy)
 
