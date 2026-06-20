@@ -229,8 +229,6 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
                 }
 
-                Divider()
-
                 // Image info
                 if let img = scanner.capturedImage {
                     VStack(alignment: .leading, spacing: 4) {
