@@ -254,6 +254,7 @@ struct ContentView: View {
                 }
             }
             .padding()
+            .padding(.trailing, 15)
             }
             .frame(width: 216)
 
