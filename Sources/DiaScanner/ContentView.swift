@@ -21,12 +21,6 @@ struct ContentView: View {
         HSplitView {
             // ─── Control panel ────────────────────────────────────────
             VStack(alignment: .leading, spacing: 16) {
-                Text("PX-2130 Dia Scanner")
-                    .font(.headline)
-                    .padding(.top, 4)
-
-                Divider()
-
                 // Connection status
                 HStack {
                     Circle()

@@ -9,6 +9,16 @@ import SwiftUI
 import AppKit
 import DiaScannerLib
 
+private struct AboutMenuButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("About DiaScanner") {
+            openWindow(id: "about")
+        }
+    }
+}
+
 @main
 struct DiaScannerApp: App {
 
@@ -25,6 +35,15 @@ struct DiaScannerApp: App {
         .windowStyle(.titleBar)
         .commands {
             CommandGroup(replacing: .newItem) { }
+            CommandGroup(replacing: .appInfo) {
+                AboutMenuButton()
+            }
         }
+
+        Window("About DiaScanner", id: "about") {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.titleBar)
     }
 }

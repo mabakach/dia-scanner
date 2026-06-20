@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0136040A41CF20F8CFBF8961 /* LicenseText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9222256A98C4630D879DE4A0 /* LicenseText.swift */; };
 		0870A98193FE70D4B953FE83 /* NegativeFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6899F28A9D9B6CBF983DC18 /* NegativeFilterTests.swift */; };
 		09988444345B6B1EECCDB0C2 /* CaptureRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B712A216DA7364A671DF12C /* CaptureRenderingTests.swift */; };
 		1322401D272D5EE049B9FD1C /* NegativeFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E793D70621A0C27CABE5AD1F /* NegativeFilter.swift */; };
@@ -27,6 +28,7 @@
 		6E1C8FE51E2048CEEC4DA510 /* DiaScannerLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7115ABE0B4CE9F2CEEA8D23A /* DiaScannerLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		75C6A053B51F4B6B4BC5413D /* USBTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0F908EEE6F8108FF8A0FD5 /* USBTransport.swift */; };
+		85076E2BC61DEE153FB74AEC /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 239B82703994DA28E4B067BD /* AboutView.swift */; };
 		87036B952468B91B124043EF /* BayerDemosaic.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7D87F3B45F90E06FA8AC70 /* BayerDemosaic.swift */; };
 		8C7F5FFFB3FCF15262D1BEB4 /* BrightnessContrastFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 422496A9C4BBE5AB80EE405D /* BrightnessContrastFilterTests.swift */; };
 		9071E33673CE7D4717999DBE /* OutputFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3B3761984994874149CD89 /* OutputFormatTests.swift */; };
@@ -38,6 +40,7 @@
 		C047A577686F87724BEDA90F /* DiaScannerUSBBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */; };
 		C160B564E876B06D1F88E6C1 /* DiaScannerLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88DE7040ECAC826F57315125 /* DiaScannerLib.framework */; };
 		C9EEE1C6CFB7F6CD68E72ED9 /* OV550Controller.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */; };
+		CA93FCC416857DB1C0345AD2 /* LicenseTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4A1B125F54A97130F90853 /* LicenseTextTests.swift */; };
 		D055C555FC2944757514C1CE /* OV550ControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30869AA177B726D6DD4DA8B9 /* OV550ControllerTests.swift */; };
 		D4A4482352E9CFFD90491951 /* PositiveFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B23B226451C784C2526011 /* PositiveFilterTests.swift */; };
 		D4E93FB72DAB7A8324B74405 /* ScannerDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20A0C5B9FDDFBF52DD75FB9 /* ScannerDevice.swift */; };
@@ -120,7 +123,9 @@
 
 /* Begin PBXFileReference section */
 		1B712A216DA7364A671DF12C /* CaptureRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureRenderingTests.swift; sourceTree = "<group>"; };
+		239B82703994DA28E4B067BD /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		28772CF5165F4DAEEC105F22 /* OV5621Sensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV5621Sensor.swift; sourceTree = "<group>"; };
+		2C4A1B125F54A97130F90853 /* LicenseTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseTextTests.swift; sourceTree = "<group>"; };
 		30869AA177B726D6DD4DA8B9 /* OV550ControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OV550ControllerTests.swift; sourceTree = "<group>"; };
 		32F17F0D8B1F3A8CE552FE26 /* OVUSBDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OVUSBDevice.m; sourceTree = "<group>"; };
 		422496A9C4BBE5AB80EE405D /* BrightnessContrastFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrightnessContrastFilterTests.swift; sourceTree = "<group>"; };
@@ -137,6 +142,7 @@
 		7E3B3761984994874149CD89 /* OutputFormatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputFormatTests.swift; sourceTree = "<group>"; };
 		82175549A49868FDA36075C8 /* ImageTransform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTransform.swift; sourceTree = "<group>"; };
 		88DE7040ECAC826F57315125 /* DiaScannerLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DiaScannerLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9222256A98C4630D879DE4A0 /* LicenseText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseText.swift; sourceTree = "<group>"; };
 		98C8F508B06CFB39E02E1A0C /* DiaScannerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DiaScannerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		99AB3E24C04B0B28D73F46E3 /* DiaScannerUSBBridge.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DiaScannerUSBBridge.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20A0C5B9FDDFBF52DD75FB9 /* ScannerDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerDevice.swift; sourceTree = "<group>"; };
@@ -212,6 +218,7 @@
 				1B712A216DA7364A671DF12C /* CaptureRenderingTests.swift */,
 				BFBD9953A132A144D53DEA08 /* FrameParserTests.swift */,
 				E3D4EDB7BE51965D00C57BAF /* ImageTransformTests.swift */,
+				2C4A1B125F54A97130F90853 /* LicenseTextTests.swift */,
 				F6899F28A9D9B6CBF983DC18 /* NegativeFilterTests.swift */,
 				7E3B3761984994874149CD89 /* OutputFormatTests.swift */,
 				30869AA177B726D6DD4DA8B9 /* OV550ControllerTests.swift */,
@@ -259,6 +266,7 @@
 				82175549A49868FDA36075C8 /* ImageTransform.swift */,
 				C397CC311CA9A0673507C997 /* Info.plist */,
 				E49108753859E994CB37FE3D /* IOKitUSBTransport.swift */,
+				9222256A98C4630D879DE4A0 /* LicenseText.swift */,
 				E793D70621A0C27CABE5AD1F /* NegativeFilter.swift */,
 				69A696BE428EC60979C37C09 /* OutputFormat.swift */,
 				A5E355FEA8C5D49FF0149549 /* OV550Controller.swift */,
@@ -304,6 +312,7 @@
 		CFBBE59B1D33E1415D0312DA /* DiaScanner */ = {
 			isa = PBXGroup;
 			children = (
+				239B82703994DA28E4B067BD /* AboutView.swift */,
 				78F3CD42DCB40854A4CF0BDB /* ContentView.swift */,
 				A8D256FB09928DD4C8BBE25A /* DiaScannerApp.swift */,
 				730F52999DC9033C031FDB76 /* Info.plist */,
@@ -492,6 +501,7 @@
 				61661CCF95462A092BCA0C84 /* FrameParser.swift in Sources */,
 				D9677F56A5336796D8E3D1C6 /* IOKitUSBTransport.swift in Sources */,
 				A5A745A1CFF879EF87141401 /* ImageTransform.swift in Sources */,
+				0136040A41CF20F8CFBF8961 /* LicenseText.swift in Sources */,
 				1322401D272D5EE049B9FD1C /* NegativeFilter.swift in Sources */,
 				5D790B2DED0A51D150050EFB /* OV2640Sensor.swift in Sources */,
 				C9EEE1C6CFB7F6CD68E72ED9 /* OV550Controller.swift in Sources */,
@@ -516,6 +526,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				85076E2BC61DEE153FB74AEC /* AboutView.swift in Sources */,
 				17086761AB4AE102BED7BCBA /* ContentView.swift in Sources */,
 				5C6EC8DB7287D2B28F55C68C /* DiaScannerApp.swift in Sources */,
 			);
@@ -530,6 +541,7 @@
 				09988444345B6B1EECCDB0C2 /* CaptureRenderingTests.swift in Sources */,
 				233BB20CAA10E723F200866F /* FrameParserTests.swift in Sources */,
 				A321523F509B4ECD50A60495 /* ImageTransformTests.swift in Sources */,
+				CA93FCC416857DB1C0345AD2 /* LicenseTextTests.swift in Sources */,
 				0870A98193FE70D4B953FE83 /* NegativeFilterTests.swift in Sources */,
 				D055C555FC2944757514C1CE /* OV550ControllerTests.swift in Sources */,
 				9071E33673CE7D4717999DBE /* OutputFormatTests.swift in Sources */,
