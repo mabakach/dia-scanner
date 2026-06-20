@@ -16,6 +16,8 @@ struct ContentView: View {
     @State private var imageTransform = ImageTransform()
     @State private var outputFormat: OutputFormat = .png
     @State private var jpegQuality: Double = 0.85
+    @State private var scanFilename = ScanFilename()
+    @State private var counterText: String = "1"
 
     var body: some View {
         HSplitView {
@@ -94,6 +96,34 @@ struct ContentView: View {
                         }
                         Slider(value: $jpegQuality, in: 0.01...1.0)
                     }
+                }
+
+                // Filename prefix + counter
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Filename")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        TextField("prefix", text: $scanFilename.prefix)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption)
+                        Text("_")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextField("#", text: $counterText)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption.monospacedDigit())
+                            .frame(width: 44)
+                            .multilineTextAlignment(.trailing)
+                            .onChange(of: counterText) { _, new in
+                                if let n = Int(new), n >= 0 {
+                                    scanFilename.counter = n
+                                }
+                            }
+                    }
+                    Text(".\(outputFormat.fileExtension)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
 
                 // Save
@@ -275,13 +305,16 @@ struct ContentView: View {
         let transformed = captured.applying(imageTransform)
         let fmt = outputFormat
         let quality = jpegQuality
+        let defaultName = scanFilename.filename(for: fmt)
         let panel = NSSavePanel()
         panel.allowedContentTypes = [fmt.utType].compactMap { $0 }
-        panel.nameFieldStringValue = "scan.\(fmt.fileExtension)"
+        panel.nameFieldStringValue = defaultName
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
             do {
                 try scanner.saveImage(transformed, to: url, format: fmt, quality: quality)
+                scanFilename.increment()
+                counterText = String(scanFilename.counter)
             } catch {
                 print("Save failed: \(error)")
             }
