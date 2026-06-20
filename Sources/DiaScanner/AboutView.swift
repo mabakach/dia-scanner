@@ -43,7 +43,22 @@ struct AboutView: View {
         }
         .padding(20)
         .frame(width: 520)
+        .background(MiniaturizeButtonDisabler())
     }
+}
+
+// NSViewRepresentable bridge to reach the NSWindow and disable the minimize button,
+// which SwiftUI exposes no native modifier for.
+private struct MiniaturizeButtonDisabler: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            view.window?.standardWindowButton(.miniaturizeButton)?.isEnabled = false
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
 #Preview {
