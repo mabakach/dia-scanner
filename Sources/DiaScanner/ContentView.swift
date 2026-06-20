@@ -116,8 +116,9 @@ struct ContentView: View {
                             .frame(width: 44)
                             .multilineTextAlignment(.trailing)
                             .onChange(of: counterText) { _, new in
-                                if let n = Int(new), n >= 0 {
-                                    scanFilename.counter = n
+                                if let parsed = ScanFilename.parseCounterInput(new) {
+                                    scanFilename.counter = parsed.counter
+                                    scanFilename.counterPadding = parsed.padding
                                 }
                             }
                     }
@@ -314,7 +315,7 @@ struct ContentView: View {
             do {
                 try scanner.saveImage(transformed, to: url, format: fmt, quality: quality)
                 scanFilename.increment()
-                counterText = String(scanFilename.counter)
+                counterText = scanFilename.formattedCounter
             } catch {
                 print("Save failed: \(error)")
             }
