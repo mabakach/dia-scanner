@@ -255,7 +255,7 @@ struct ContentView: View {
             }
             .padding()
             }
-            .frame(width: 200)
+            .frame(width: 216)
 
             // ─── Image preview ────────────────────────────────────────
             ZStack {
