@@ -32,7 +32,7 @@ struct DiaScannerApp: App {
             ContentView()
                 .frame(minWidth: 900, minHeight: 800)
         }
-        .defaultSize(width: 1100, height: 950)
+        .defaultSize(width: 1100, height: 1050)
         .windowStyle(.titleBar)
         .commands {
             CommandGroup(replacing: .newItem) { }

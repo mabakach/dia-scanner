@@ -324,7 +324,7 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .frame(width: 1100, height: 950)
+        .frame(width: 1100, height: 1050)
 }
 
 private struct HistogramView: View {
