@@ -30,8 +30,9 @@ struct DiaScannerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 800, minHeight: 700)
+                .frame(minWidth: 900, minHeight: 800)
         }
+        .defaultSize(width: 1100, height: 1050)
         .windowStyle(.titleBar)
         .commands {
             CommandGroup(replacing: .newItem) { }

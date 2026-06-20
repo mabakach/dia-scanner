@@ -16,10 +16,13 @@ struct ContentView: View {
     @State private var imageTransform = ImageTransform()
     @State private var outputFormat: OutputFormat = .png
     @State private var jpegQuality: Double = 0.85
+    @State private var scanFilename = ScanFilename()
+    @State private var counterText: String = "001"
 
     var body: some View {
         HSplitView {
             // ─── Control panel ────────────────────────────────────────
+            ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 16) {
                 // Connection status
                 HStack {
@@ -94,6 +97,35 @@ struct ContentView: View {
                         }
                         Slider(value: $jpegQuality, in: 0.01...1.0)
                     }
+                }
+
+                // Filename prefix + counter
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Filename")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        TextField("prefix", text: $scanFilename.prefix)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption)
+                        Text("_")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextField("#", text: $counterText)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption.monospacedDigit())
+                            .frame(width: 44)
+                            .multilineTextAlignment(.trailing)
+                            .onChange(of: counterText) { _, new in
+                                if let parsed = ScanFilename.parseCounterInput(new) {
+                                    scanFilename.counter = parsed.counter
+                                    scanFilename.counterPadding = parsed.padding
+                                }
+                            }
+                    }
+                    Text(".\(outputFormat.fileExtension)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
 
                 // Save
@@ -197,8 +229,6 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
                 }
 
-                Divider()
-
                 // Image info
                 if let img = scanner.capturedImage {
                     VStack(alignment: .leading, spacing: 4) {
@@ -209,8 +239,6 @@ struct ContentView: View {
                             .font(.caption.monospacedDigit())
                     }
                 }
-
-                Spacer()
 
                 // Error display
                 if let err = scanner.lastError {
@@ -224,7 +252,9 @@ struct ContentView: View {
                 }
             }
             .padding()
-            .frame(width: 200)
+            .padding(.trailing, 15)
+            }
+            .frame(width: 216)
 
             // ─── Image preview ────────────────────────────────────────
             ZStack {
@@ -275,13 +305,16 @@ struct ContentView: View {
         let transformed = captured.applying(imageTransform)
         let fmt = outputFormat
         let quality = jpegQuality
+        let defaultName = scanFilename.filename(for: fmt)
         let panel = NSSavePanel()
         panel.allowedContentTypes = [fmt.utType].compactMap { $0 }
-        panel.nameFieldStringValue = "scan.\(fmt.fileExtension)"
+        panel.nameFieldStringValue = defaultName
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
             do {
                 try scanner.saveImage(transformed, to: url, format: fmt, quality: quality)
+                scanFilename.increment()
+                counterText = scanFilename.formattedCounter
             } catch {
                 print("Save failed: \(error)")
             }
@@ -291,7 +324,7 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .frame(width: 900, height: 700)
+        .frame(width: 1100, height: 1050)
 }
 
 private struct HistogramView: View {
