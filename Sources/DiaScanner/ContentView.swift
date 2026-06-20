@@ -22,6 +22,7 @@ struct ContentView: View {
     var body: some View {
         HSplitView {
             // ─── Control panel ────────────────────────────────────────
+            ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 16) {
                 // Connection status
                 HStack {
@@ -241,8 +242,6 @@ struct ContentView: View {
                     }
                 }
 
-                Spacer()
-
                 // Error display
                 if let err = scanner.lastError {
                     Text(err)
@@ -255,6 +254,7 @@ struct ContentView: View {
                 }
             }
             .padding()
+            }
             .frame(width: 200)
 
             // ─── Image preview ────────────────────────────────────────
