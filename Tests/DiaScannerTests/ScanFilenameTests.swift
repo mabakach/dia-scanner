@@ -13,25 +13,25 @@ struct ScanFilenameTests {
 
     // MARK: - Defaults
 
-    @Test("default prefix is 'scan', counter is 1, no padding")
+    @Test("default prefix is 'scan', counter is 1, padding is 3")
     func defaultValues() {
         let fn = ScanFilename()
         #expect(fn.prefix == "scan")
         #expect(fn.counter == 1)
-        #expect(fn.counterPadding == 1)
+        #expect(fn.counterPadding == 3)
     }
 
-    @Test("default filename is scan_1.png")
+    @Test("default filename is scan_001.png")
     func defaultFilename() {
         let fn = ScanFilename()
-        #expect(fn.filename(for: .png) == "scan_1.png")
+        #expect(fn.filename(for: .png) == "scan_001.png")
     }
 
     // MARK: - filename format (no padding)
 
     @Test("filename uses prefix_counter.ext format across all formats")
     func filenameFormat() {
-        let fn = ScanFilename(prefix: "slide", counter: 3)
+        let fn = ScanFilename(prefix: "slide", counter: 3, counterPadding: 1)
         #expect(fn.filename(for: .png)      == "slide_3.png")
         #expect(fn.filename(for: .jpeg)     == "slide_3.jpg")
         #expect(fn.filename(for: .tiff)     == "slide_3.tiff")
@@ -41,19 +41,19 @@ struct ScanFilenameTests {
 
     @Test("custom prefix with spaces is preserved verbatim")
     func customPrefixWithSpaces() {
-        let fn = ScanFilename(prefix: "my scan", counter: 10)
+        let fn = ScanFilename(prefix: "my scan", counter: 10, counterPadding: 1)
         #expect(fn.filename(for: .png) == "my scan_10.png")
     }
 
     @Test("counter zero is valid")
     func counterZero() {
-        let fn = ScanFilename(prefix: "scan", counter: 0)
+        let fn = ScanFilename(prefix: "scan", counter: 0, counterPadding: 1)
         #expect(fn.filename(for: .png) == "scan_0.png")
     }
 
     @Test("large counter without padding")
     func largeCounter() {
-        let fn = ScanFilename(prefix: "batch", counter: 9999)
+        let fn = ScanFilename(prefix: "batch", counter: 9999, counterPadding: 1)
         #expect(fn.filename(for: .tiff) == "batch_9999.tiff")
     }
 
@@ -61,7 +61,7 @@ struct ScanFilenameTests {
 
     @Test("increment advances counter by one")
     func increment() {
-        var fn = ScanFilename(prefix: "img", counter: 5)
+        var fn = ScanFilename(prefix: "img", counter: 5, counterPadding: 1)
         fn.increment()
         #expect(fn.counter == 6)
         #expect(fn.filename(for: .jpeg) == "img_6.jpg")

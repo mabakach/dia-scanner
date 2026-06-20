@@ -17,7 +17,7 @@ struct ContentView: View {
     @State private var outputFormat: OutputFormat = .png
     @State private var jpegQuality: Double = 0.85
     @State private var scanFilename = ScanFilename()
-    @State private var counterText: String = "1"
+    @State private var counterText: String = "001"
 
     var body: some View {
         HSplitView {

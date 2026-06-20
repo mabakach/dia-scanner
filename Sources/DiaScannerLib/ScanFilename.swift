@@ -13,7 +13,7 @@ public struct ScanFilename: Sendable {
     /// 1 means no leading zeros; 3 means "001", "042", "100", "1000", …
     public var counterPadding: Int
 
-    public init(prefix: String = "scan", counter: Int = 1, counterPadding: Int = 1) {
+    public init(prefix: String = "scan", counter: Int = 1, counterPadding: Int = 3) {
         self.prefix = prefix
         self.counter = counter
         self.counterPadding = counterPadding
