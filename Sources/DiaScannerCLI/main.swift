@@ -150,7 +150,7 @@ func run() throws {
     log("CLI: demosaicing \(width)×\(height) BGGR8\(isNegative ? " (negative mode)" : "")")
     let trimmed = raw.count == width * height ? Data(raw) : Data(raw.prefix(width * height))
     var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: height, pattern: .bggr)
-    if isNegative { rgb = NegativeFilter.apply(to: rgb, width: width, height: height) }
+    if isNegative { (rgb, _) = NegativeFilter.apply(to: rgb, width: width, height: height) }
     if let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height) {
         let imgURL = URL(fileURLWithPath: "\(outputPath).\(outputFormat.fileExtension)")
         let data = try outputFormat.encode(img, quality: jpegQuality)
