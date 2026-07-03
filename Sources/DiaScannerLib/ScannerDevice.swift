@@ -21,7 +21,6 @@ public final class ScannerDevice: ObservableObject {
     @Published public var isConnected    = false
     @Published public var isBusy         = false
     @Published public var lastError: String?
-    @Published public var capturedImage: NSImage?
     @Published public var liveFrame:     NSImage?
     @Published public var isNegativeMode    = false
     @Published public var vignetteK: Float  = PositiveFilter.defaultVignetteK
@@ -35,30 +34,32 @@ public final class ScannerDevice: ObservableObject {
     private var ov5621:          OV5621Sensor?
     private var streamTask:      Task<Void, Never>?
     private var latestRawBayer:  Data?
-    private var capturedRawBayer: Data?
     private var cancellables = Set<AnyCancellable>()
 
+    // Events fed into the single stream-loop: either a new USB frame or a
+    // "re-render with current settings" signal from a slider change.
+    private enum StreamEvent: Sendable {
+        case frame(Data)
+        case rerender
+    }
+
+    // The continuation is written on the main actor (in startLivePreview / disconnect)
+    // and read from @Published sink closures that also run on the main thread.
+    // nonisolated(unsafe) opts out of the type-system check; the runtime guarantee holds.
+    nonisolated(unsafe) private var reRenderCont: AsyncStream<StreamEvent>.Continuation?
+
     public init() {
-        $isNegativeMode
-            .dropFirst()
-            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
-            .store(in: &cancellables)
-        $vignetteK
-            .dropFirst()
-            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
-            .store(in: &cancellables)
-        $autoLevelsEnabled
-            .dropFirst()
-            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
-            .store(in: &cancellables)
-        $brightness
-            .dropFirst()
-            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
-            .store(in: &cancellables)
-        $contrast
-            .dropFirst()
-            .sink { [weak self] _ in Task { [weak self] in await self?.renderCapturedImage() } }
-            .store(in: &cancellables)
+        // When any filter setting changes, push a rerender event so the live stream
+        // loop picks it up immediately without waiting for the next USB frame.
+        // Also re-render the captured image (if any) through a separate task.
+        let rerenderLive: (Any) -> Void = { [weak self] _ in
+            self?.reRenderCont?.yield(.rerender)
+        }
+        $isNegativeMode .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
+        $vignetteK      .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
+        $autoLevelsEnabled.dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
+        $brightness     .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
+        $contrast       .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
     }
 
     // ─── Logging ───────────────────────────────────────────────────
@@ -132,7 +133,8 @@ public final class ScannerDevice: ObservableObject {
         liveFrame      = nil
         histogram      = nil
         latestRawBayer = nil
-        // Cancelling the consumer task ends the AsyncStream for-await loop automatically.
+        reRenderCont?.finish()
+        reRenderCont = nil
         streamTask?.cancel()
         streamTask = nil
         // Stop USB on a background thread — stopStreaming blocks up to 3 s.
@@ -154,126 +156,132 @@ public final class ScannerDevice: ObservableObject {
         let height   = OV5621Sensor.frameHeight
         let expected = UInt(OV5621Sensor.frameBytes)
 
-        // Stream and continuation are created in a nonisolated context so they are
-        // never in the main actor's region. Only the Sendable AsyncStream crosses
-        // back to the main actor. The continuation stays nonisolated for its lifetime,
-        // making the ObjC 'sending' handler closure trivially region-safe.
-        let stream: AsyncStream<Data>
+        // Both the AsyncStream and its continuation are created in a nonisolated context
+        // so they are never in the main actor's region. The ObjC frame-handler closure
+        // captures only the nonisolated continuation, satisfying 'sending' requirements.
+        let eventStream: AsyncStream<StreamEvent>
         do {
-            stream = try Self.beginStreaming(on: device, frameBytes: expected)
+            let (stream, cont) = try Self.beginStreamingEvents(on: device, frameBytes: expected)
+            eventStream = stream
+            reRenderCont = cont
         } catch {
             Self.log("startStreaming failed: \(error)")
             lastError = error.localizedDescription
             return
         }
 
-        // Consume frames on the main actor; demosaic runs in a detached task.
-        // bufferingNewest(1) (set in beginStreaming) drops stale frames when
-        // demosaic can't keep up. Task cancellation ends the for-await loop.
+        // Single sequential loop handles BOTH USB frames and slider-change rerenders.
+        // No concurrent tasks race over liveFrame: only one processRaw runs at a time.
+        // negClips holds EMA-smoothed auto-levels clip points for negatives, eliminating
+        // frame-to-frame oscillation caused by per-frame histogram recomputation.
         streamTask = Task {
-            for await rawData in stream {
-                self.latestRawBayer = rawData
-                let negative    = self.isNegativeMode
-                let vk          = self.vignetteK
-                let autoLevels  = self.autoLevelsEnabled
-                let bright      = self.brightness
-                let cont        = self.contrast
-                let result: (NSImage, RGBHistogram)? = await Task.detached(priority: .userInitiated) {
-                    let rows = rawData.count / width
-                    let h    = min(height, rows)
-                    guard h > 0 else { return nil }
-                    let trimmed = rawData.count == width * h
-                        ? rawData : Data(rawData.prefix(width * h))
-                    var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
-                    if negative {
-                        rgb = PositiveFilter.applyVignetting(to: rgb, width: width, height: h, vignetteK: vk)
-                        rgb = NegativeFilter.apply(to: rgb, width: width, height: h, applyAutoLevels: autoLevels)
-                    } else {
-                        rgb = PositiveFilter.apply(to: rgb, width: width, height: h, vignetteK: vk,
-                                                   applyAutoLevels: autoLevels)
-                    }
-                    if bright != 0 || cont != 0 {
-                        rgb = BrightnessContrastFilter.apply(to: rgb, width: width, height: h,
-                                                             brightness: bright, contrast: cont)
-                    }
-                    let hist = RGBHistogram.compute(from: rgb, pixelCount: width * h)
-                    guard let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h)
-                    else { return nil }
-                    return (img, hist)
-                }.value
-                guard !Task.isCancelled, let (image, hist) = result else { continue }
+            var negClips: NegativeFilter.Clips?
+            var posClips: PositiveFilter.Clips?
+            for await event in eventStream {
+                let rawToProcess: Data
+                switch event {
+                case .frame(let data):
+                    self.latestRawBayer = data
+                    rawToProcess = data
+                case .rerender:
+                    guard let latest = self.latestRawBayer else { continue }
+                    rawToProcess = latest
+                    negClips = nil  // reset smoothing when settings change
+                    posClips = nil
+                }
+                let negative   = self.isNegativeMode
+                let vk         = self.vignetteK
+                let autoLevels = self.autoLevelsEnabled
+                let bright     = self.brightness
+                let cont       = self.contrast
+                let capNeg     = negClips
+                let capPos     = posClips
+                let result: (NSImage, RGBHistogram, NegativeFilter.Clips?, PositiveFilter.Clips?)? =
+                    await Task.detached(priority: .userInitiated) {
+                        Self.processRaw(rawToProcess, width: width, maxHeight: height,
+                                        negative: negative, vignetteK: vk, autoLevels: autoLevels,
+                                        brightness: bright, contrast: cont,
+                                        negClips: capNeg, posClips: capPos)
+                    }.value
+                guard !Task.isCancelled,
+                      let (image, hist, freshNeg, freshPos) = result else { continue }
                 self.liveFrame  = image
                 self.histogram  = hist
+                // Update smoothed clips: snap immediately on scene change (new slide),
+                // otherwise blend with EMA to suppress frame-to-frame sensor noise.
+                if let fc = freshNeg {
+                    if let nc = negClips, !nc.hasSceneChange(vs: fc) {
+                        negClips = nc.blended(with: fc, alpha: 0.15)
+                    } else {
+                        negClips = fc
+                    }
+                }
+                if let fc = freshPos {
+                    if let pc = posClips, !pc.hasSceneChange(vs: fc) {
+                        posClips = pc.blended(with: fc, alpha: 0.15)
+                    } else {
+                        posClips = fc
+                    }
+                }
             }
         }
     }
 
-    // Both AsyncStream and its continuation are created here, in a nonisolated
-    // context. The continuation is captured by the frame handler closure and never
-    // touches the main actor's region, so it can be passed as a 'sending' parameter
-    // to the ObjC startStreaming method without a region-isolation error.
-    private static nonisolated func beginStreaming(
+    // Both AsyncStream<StreamEvent> and its continuation are created here, in a nonisolated
+    // context. The ObjC frame-handler closure captures only the continuation (which is
+    // nonisolated and Sendable), so it can be passed as 'sending' without isolation errors.
+    private static nonisolated func beginStreamingEvents(
         on device: OVUSBDevice,
         frameBytes: UInt
-    ) throws -> AsyncStream<Data> {
+    ) throws -> (AsyncStream<StreamEvent>, AsyncStream<StreamEvent>.Continuation) {
         let (stream, continuation) = AsyncStream.makeStream(
-            of: Data.self,
-            bufferingPolicy: .bufferingNewest(1)
+            of: StreamEvent.self,
+            bufferingPolicy: .bufferingNewest(4)
         )
         try device.startStreaming(withFrameBytes: frameBytes) { rawData in
-            continuation.yield(rawData)
+            continuation.yield(.frame(rawData))
         }
-        return stream
+        return (stream, continuation)
     }
 
-    // ─── Capture ───────────────────────────────────────────────────
-
-    public func captureFrame() async {
-        guard isConnected else {
-            lastError = "Scanner not connected"
-            return
+    // Shared image processing pipeline used by the live stream loop.
+    // `negClips`/`posClips`: smoothed clip points from previous frames (nil = fresh, first frame).
+    // Returns image, histogram, and fresh clips for whichever mode is active (for EMA in caller).
+    private static nonisolated func processRaw(
+        _ rawData: Data,
+        width: Int,
+        maxHeight: Int,
+        negative: Bool,
+        vignetteK: Float,
+        autoLevels: Bool,
+        brightness: Float,
+        contrast: Float,
+        negClips: NegativeFilter.Clips? = nil,
+        posClips: PositiveFilter.Clips? = nil
+    ) -> (NSImage, RGBHistogram, NegativeFilter.Clips?, PositiveFilter.Clips?)? {
+        let rows    = rawData.count / width
+        let h       = min(maxHeight, rows)
+        guard h > 0 else { return nil }
+        let trimmed = rawData.count == width * h ? rawData : Data(rawData.prefix(width * h))
+        var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
+        var freshNeg: NegativeFilter.Clips?
+        var freshPos: PositiveFilter.Clips?
+        if negative {
+            rgb = PositiveFilter.applyVignetting(to: rgb, width: width, height: h, vignetteK: vignetteK)
+            (rgb, freshNeg) = NegativeFilter.apply(to: rgb, width: width, height: h,
+                                                    applyAutoLevels: autoLevels, clips: negClips)
+        } else {
+            (rgb, freshPos) = PositiveFilter.apply(to: rgb, width: width, height: h,
+                                                    vignetteK: vignetteK, applyAutoLevels: autoLevels,
+                                                    clips: posClips)
         }
-        guard let raw = latestRawBayer else {
-            lastError = "No raw frame available yet"
-            return
+        if brightness != 0 || contrast != 0 {
+            rgb = BrightnessContrastFilter.apply(to: rgb, width: width, height: h,
+                                                 brightness: brightness, contrast: contrast)
         }
-        capturedRawBayer = raw
-        await renderCapturedImage()
-        Self.log("captureFrame: raw Bayer frame captured")
-    }
-
-    // Renders capturedImage from capturedRawBayer using the current filter settings.
-    // Called at capture time and whenever any filter setting changes while raw data is held.
-    private func renderCapturedImage() async {
-        guard let raw = capturedRawBayer else { return }
-        let width      = ScannerDevice.frameWidth
-        let height     = ScannerDevice.frameHeight
-        let negative   = isNegativeMode
-        let vk         = vignetteK
-        let autoLevels = autoLevelsEnabled
-        let bright     = brightness
-        let cont       = contrast
-        let result: (NSImage, RGBHistogram)? = await Task.detached(priority: .userInitiated) {
-            var rgb = BayerDemosaic.demosaic(raw, width: width, height: height, pattern: .bggr)
-            if negative {
-                rgb = PositiveFilter.applyVignetting(to: rgb, width: width, height: height, vignetteK: vk)
-                rgb = NegativeFilter.apply(to: rgb, width: width, height: height, applyAutoLevels: autoLevels)
-            } else {
-                rgb = PositiveFilter.apply(to: rgb, width: width, height: height, vignetteK: vk,
-                                           applyAutoLevels: autoLevels)
-            }
-            if bright != 0 || cont != 0 {
-                rgb = BrightnessContrastFilter.apply(to: rgb, width: width, height: height,
-                                                     brightness: bright, contrast: cont)
-            }
-            let hist = RGBHistogram.compute(from: rgb, pixelCount: width * height)
-            guard let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: height)
-            else { return nil }
-            return (img, hist)
-        }.value
-        guard let (image, hist) = result else { return }
-        capturedImage = image
-        histogram     = hist
+        let hist = RGBHistogram.compute(from: rgb, pixelCount: width * h)
+        guard let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h) else { return nil }
+        return (img, hist, freshNeg, freshPos)
     }
 
     // ─── Adjustments ───────────────────────────────────────────────

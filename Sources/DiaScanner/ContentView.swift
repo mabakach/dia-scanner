@@ -65,15 +65,15 @@ struct ContentView: View {
 
                 Divider()
 
-                // Capture
+                // Save
                 Button {
-                    Task { await scanner.captureFrame() }
+                    saveImage()
                 } label: {
-                    Label("Capture Frame", systemImage: "camera")
+                    Label("Save Frame…", systemImage: "square.and.arrow.down")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(!scanner.isConnected || scanner.isBusy)
+                .disabled(scanner.liveFrame == nil)
 
                 // Output format
                 VStack(alignment: .leading, spacing: 6) {
@@ -127,15 +127,6 @@ struct ContentView: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
-
-                // Save
-                Button {
-                    saveImage()
-                } label: {
-                    Label("Save Image…", systemImage: "square.and.arrow.down")
-                        .frame(maxWidth: .infinity)
-                }
-                .disabled(scanner.capturedImage == nil)
 
                 Divider()
 
@@ -229,17 +220,6 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
                 }
 
-                // Image info
-                if let img = scanner.capturedImage {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Resolution")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("\(Int(img.size.width)) × \(Int(img.size.height)) px")
-                            .font(.caption.monospacedDigit())
-                    }
-                }
-
                 // Error display
                 if let err = scanner.lastError {
                     Text(err)
@@ -266,7 +246,7 @@ struct ContentView: View {
                         Text("Working…")
                             .foregroundStyle(.secondary)
                     }
-                } else if scanner.isConnected, let frame = scanner.liveFrame {
+                } else if let frame = scanner.liveFrame {
                     Image(nsImage: frame)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -276,16 +256,7 @@ struct ContentView: View {
                             y: imageTransform.mirrorVertical   ? -1 : 1
                         )
                         .padding(8)
-                } else if let img = scanner.capturedImage {
-                    Image(nsImage: img)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .rotationEffect(.degrees(Double(imageTransform.rotation)))
-                        .scaleEffect(
-                            x: imageTransform.mirrorHorizontal ? -1 : 1,
-                            y: imageTransform.mirrorVertical   ? -1 : 1
-                        )
-                        .padding(8)
+                        .allowsHitTesting(false)
                 } else {
                     VStack(spacing: 8) {
                         Image(systemName: "photo")
@@ -301,7 +272,7 @@ struct ContentView: View {
     }
 
     private func saveImage() {
-        guard let captured = scanner.capturedImage else { return }
+        guard let captured = scanner.liveFrame else { return }
         let transformed = captured.applying(imageTransform)
         let fmt = outputFormat
         let quality = jpegQuality
