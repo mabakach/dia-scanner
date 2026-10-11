@@ -94,6 +94,15 @@ public final class OV5621Sensor {
         try transport.writeSensorRegister(0x02, value: redGain)
     }
 
+    /// Restores the sensor's automatic exposure, gain and white balance (init-sequence values).
+    /// Negatives need this: the fixed positive calibration does not suit the orange mask.
+    public func applyAutoExposure() throws {
+        try transport.writeSensorRegister(0x01, value: 0x40)
+        try transport.writeSensorRegister(0x02, value: 0x40)
+        try transport.writeSensorRegister(0x10, value: 0x1E)
+        try transport.writeSensorRegister(0x13, value: 0xC7)  // AEC, AWB, AGC on
+    }
+
     /// Stop sequence from gspca sd_stopN for non-OV361x sensors.
     public func stop() throws {
         try transport.writeRegister(0xE0, value: 0x01)  // stop transfer

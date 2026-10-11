@@ -18,7 +18,8 @@ public final class ScannerDevice: ObservableObject {
     public static let frameWidth  = OV5621Sensor.frameWidth
     public static let frameHeight = OV5621Sensor.frameHeight
 
-    /// Tuned by eye against a projector reference shot of the same slide.
+    /// Positive defaults, tuned by eye against a projector reference shot of a slide.
+    /// Negatives use neutral values (saturation 1, green gain 1) and sensor auto exposure.
     public static let defaultSaturation: Float = 1.4
     public static let defaultGreenGain: Float = 0.92
 
@@ -63,6 +64,10 @@ public final class ScannerDevice: ObservableObject {
         let rerenderLive: (Any) -> Void = { [weak self] _ in
             self?.reRenderCont?.yield(.rerender)
         }
+        $isNegativeMode .dropFirst().sink { [weak self] negative in
+            // @Published emits before the property changes, so pass the new value explicitly.
+            self?.applyFilmTypeSettings(negative: negative)
+        }.store(in: &cancellables)
         $isNegativeMode .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
         $vignetteK      .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
         $autoLevelsEnabled.dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
@@ -130,6 +135,7 @@ public final class ScannerDevice: ObservableObject {
             usbDevice   = device
             transport   = xport
             ov5621      = sensor
+            applyFilmTypeSettings(negative: isNegativeMode)
             isConnected = true
             Self.log("connected!")
             startLivePreview()
@@ -340,14 +346,28 @@ public final class ScannerDevice: ObservableObject {
 
     // ─── Adjustments ───────────────────────────────────────────────
 
+    /// Switches sensor exposure mode and the colour sliders to the current film type's defaults.
+    /// Called when the film type changes and after connecting.
+    private func applyFilmTypeSettings(negative: Bool) {
+        saturation = negative ? 1.0 : Self.defaultSaturation
+        greenGain  = negative ? 1.0 : Self.defaultGreenGain
+        redGain    = 1.0
+        blueGain   = 1.0
+        guard let sensor = ov5621 else { return }
+        Task.detached {
+            do {
+                if negative { try sensor.applyAutoExposure() } else { try sensor.applyManualExposure() }
+            } catch {
+                Self.log("film type sensor settings failed: \(error)")
+            }
+        }
+    }
+
     public func resetAdjustments() {
         autoLevelsEnabled = true
         brightness        = 0.0
         contrast          = 0.0
-        saturation        = Self.defaultSaturation
-        redGain           = 1.0
-        greenGain         = Self.defaultGreenGain
-        blueGain          = 1.0
+        applyFilmTypeSettings(negative: isNegativeMode)
         vignetteK         = PositiveFilter.defaultVignetteK
     }
 
