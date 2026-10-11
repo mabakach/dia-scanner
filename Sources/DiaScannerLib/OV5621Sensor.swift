@@ -71,6 +71,27 @@ public final class OV5621Sensor {
         try applyBridgeArray(Self.ov562xBridgeInit)
         try applySensorArray(Self.ov562xSensorInit)
         try transport.writeRegister(0xE0, value: 0x00)  // start transfer
+        try applyManualExposure()
+    }
+
+    /// Fixed exposure and white balance for slide scanning.
+    ///
+    /// Auto exposure over-exposes bright slides (about 30% of pixels clip at 255) and auto white
+    /// balance drifts with slide content.  Gains are calibrated on the empty light path so the
+    /// lamp reads neutral: at unity gain R:G:B = 41:107:88, so red needs ×2.6 and blue ×1.22
+    /// (0x40 = 1×; lamp-neutral is R 0xA6, B 0x4E).  Slides then showed a green/cyan cast, so
+    /// red is raised ×1.1 (0xB2) and blue ×1.1 (0x56), tuned by eye against a phone photo.
+    /// `aech`: 0x08 reads 214 on the empty light path but renders slides too dark;
+    /// 0x0A clips a bare light path (about 268) while slides carry film base density.
+    public func applyManualExposure(aech: UInt8 = 0x0A,
+                                    redGain: UInt8 = 0xB2,
+                                    blueGain: UInt8 = 0x56) throws {
+        try transport.writeSensorRegister(0x13, value: 0xC0)  // AEC, AWB, AGC off
+        try transport.writeSensorRegister(0x00, value: 0x00)  // AGC gain minimum
+        try transport.writeSensorRegister(0x04, value: 0x20)
+        try transport.writeSensorRegister(0x10, value: aech)
+        try transport.writeSensorRegister(0x01, value: blueGain)
+        try transport.writeSensorRegister(0x02, value: redGain)
     }
 
     /// Stop sequence from gspca sd_stopN for non-OV361x sensors.

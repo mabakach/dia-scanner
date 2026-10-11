@@ -18,6 +18,10 @@ public final class ScannerDevice: ObservableObject {
     public static let frameWidth  = OV5621Sensor.frameWidth
     public static let frameHeight = OV5621Sensor.frameHeight
 
+    /// Tuned by eye against a projector reference shot of the same slide.
+    public static let defaultSaturation: Float = 1.4
+    public static let defaultGreenGain: Float = 0.92
+
     @Published public var isConnected    = false
     @Published public var isBusy         = false
     @Published public var lastError: String?
@@ -27,6 +31,10 @@ public final class ScannerDevice: ObservableObject {
     @Published public var autoLevelsEnabled = true
     @Published public var brightness: Float = 0.0
     @Published public var contrast:   Float = 0.0
+    @Published public var saturation: Float = ScannerDevice.defaultSaturation
+    @Published public var redGain:    Float = 1.0
+    @Published public var greenGain:  Float = ScannerDevice.defaultGreenGain
+    @Published public var blueGain:   Float = 1.0
     @Published public var histogram: RGBHistogram?
 
     private var usbDevice:       OVUSBDevice?
@@ -60,6 +68,10 @@ public final class ScannerDevice: ObservableObject {
         $autoLevelsEnabled.dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
         $brightness     .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
         $contrast       .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
+        $saturation     .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
+        $redGain        .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
+        $greenGain      .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
+        $blueGain       .dropFirst().sink(receiveValue: rerenderLive).store(in: &cancellables)
     }
 
     // ─── Logging ───────────────────────────────────────────────────
@@ -194,13 +206,15 @@ public final class ScannerDevice: ObservableObject {
                 let autoLevels = self.autoLevelsEnabled
                 let bright     = self.brightness
                 let cont       = self.contrast
+                let sat        = self.saturation
+                let gains      = (r: self.redGain, g: self.greenGain, b: self.blueGain)
                 let capNeg     = negClips
                 let capPos     = posClips
                 let result: (NSImage, RGBHistogram, NegativeFilter.Clips?, PositiveFilter.Clips?)? =
                     await Task.detached(priority: .userInitiated) {
                         Self.processRaw(rawToProcess, width: width, maxHeight: height,
                                         negative: negative, vignetteK: vk, autoLevels: autoLevels,
-                                        brightness: bright, contrast: cont,
+                                        brightness: bright, contrast: cont, gains: gains, saturation: sat,
                                         negClips: capNeg, posClips: capPos)
                     }.value
                 guard !Task.isCancelled,
@@ -256,6 +270,8 @@ public final class ScannerDevice: ObservableObject {
         autoLevels: Bool,
         brightness: Float,
         contrast: Float,
+        gains: (r: Float, g: Float, b: Float),
+        saturation: Float,
         negClips: NegativeFilter.Clips? = nil,
         posClips: PositiveFilter.Clips? = nil
     ) -> (NSImage, RGBHistogram, NegativeFilter.Clips?, PositiveFilter.Clips?)? {
@@ -264,6 +280,9 @@ public final class ScannerDevice: ObservableObject {
         guard h > 0 else { return nil }
         let trimmed = rawData.count == width * h ? rawData : Data(rawData.prefix(width * h))
         var rgb = BayerDemosaic.demosaic(trimmed, width: width, height: h, pattern: .bggr)
+        if gains != (1, 1, 1) {
+            rgb = applyChannelGains(rgb, gains: gains)
+        }
         var freshNeg: NegativeFilter.Clips?
         var freshPos: PositiveFilter.Clips?
         if negative {
@@ -283,9 +302,40 @@ public final class ScannerDevice: ObservableObject {
             rgb = BrightnessContrastFilter.apply(to: rgb, width: width, height: h,
                                                  brightness: brightness, contrast: contrast)
         }
+        if saturation != 1 {
+            rgb = applySaturation(rgb, saturation: saturation)
+        }
         let hist = RGBHistogram.compute(from: rgb, pixelCount: width * h)
         guard let img = BayerDemosaic.nsImage(fromRGB: rgb, width: width, height: h) else { return nil }
         return (img, hist, freshNeg, freshPos)
+    }
+
+    /// Live colour-balance trim: multiplies each channel of packed RGB by its gain.
+    private static nonisolated func applyChannelGains(_ rgb: Data,
+                                                      gains: (r: Float, g: Float, b: Float)) -> Data {
+        let g = [gains.r, gains.g, gains.b]
+        var out = rgb
+        out.withUnsafeMutableBytes { buf in
+            for i in 0..<buf.count {
+                buf[i] = UInt8(max(0, min(255, Float(buf[i]) * g[i % 3])))
+            }
+        }
+        return out
+    }
+
+    /// Scales each pixel's distance from its Rec. 601 luma by `saturation` (1 = unchanged).
+    private static nonisolated func applySaturation(_ rgb: Data, saturation s: Float) -> Data {
+        var out = rgb
+        out.withUnsafeMutableBytes { buf in
+            for i in stride(from: 0, to: buf.count - 2, by: 3) {
+                let r = Float(buf[i]), g = Float(buf[i + 1]), b = Float(buf[i + 2])
+                let y = 0.299 * r + 0.587 * g + 0.114 * b
+                buf[i]     = UInt8(max(0, min(255, y + (r - y) * s)))
+                buf[i + 1] = UInt8(max(0, min(255, y + (g - y) * s)))
+                buf[i + 2] = UInt8(max(0, min(255, y + (b - y) * s)))
+            }
+        }
+        return out
     }
 
     // ─── Adjustments ───────────────────────────────────────────────
@@ -294,6 +344,10 @@ public final class ScannerDevice: ObservableObject {
         autoLevelsEnabled = true
         brightness        = 0.0
         contrast          = 0.0
+        saturation        = Self.defaultSaturation
+        redGain           = 1.0
+        greenGain         = Self.defaultGreenGain
+        blueGain          = 1.0
         vignetteK         = PositiveFilter.defaultVignetteK
     }
 
