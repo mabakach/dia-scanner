@@ -32,6 +32,8 @@ public final class OV5621Sensor {
     }
 
     private let transport: USBTransport
+    /// Green gain (reg 0x16) as left by manual mode, saved before auto mode lets AWB move it.
+    private var savedGreenGain: UInt8?
 
     public init(transport: USBTransport) {
         self.transport = transport
@@ -92,11 +94,18 @@ public final class OV5621Sensor {
         try transport.writeSensorRegister(0x10, value: aech)
         try transport.writeSensorRegister(0x01, value: blueGain)
         try transport.writeSensorRegister(0x02, value: redGain)
+        // Auto white balance drifts 0x16 (green gain); restore the value saved before auto mode.
+        if let green = savedGreenGain {
+            try transport.writeSensorRegister(0x16, value: green)
+        }
     }
 
     /// Restores the sensor's automatic exposure, gain and white balance (init-sequence values).
     /// Negatives need this: the fixed positive calibration does not suit the orange mask.
     public func applyAutoExposure() throws {
+        if savedGreenGain == nil {
+            savedGreenGain = try? transport.readSensorRegister(0x16)
+        }
         try transport.writeSensorRegister(0x01, value: 0x40)
         try transport.writeSensorRegister(0x02, value: 0x40)
         try transport.writeSensorRegister(0x10, value: 0x1E)
