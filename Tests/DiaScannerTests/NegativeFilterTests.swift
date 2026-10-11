@@ -13,7 +13,7 @@ final class NegativeFilterTests: XCTestCase {
     func testOutputSize() {
         let w = 4, h = 4
         let input = Data([UInt8](repeating: 128, count: w * h * 3))
-        let out = NegativeFilter.apply(to: input, width: w, height: h)
+        let out = NegativeFilter.apply(to: input, width: w, height: h).0
         XCTAssertEqual(out.count, w * h * 3)
     }
 
@@ -24,7 +24,7 @@ final class NegativeFilterTests: XCTestCase {
     func testUniformInputDoesNotCrash() {
         let w = 8, h = 8
         let input = Data([UInt8](repeating: 100, count: w * h * 3))
-        let out = NegativeFilter.apply(to: input, width: w, height: h)
+        let out = NegativeFilter.apply(to: input, width: w, height: h).0
         XCTAssertEqual(out.count, w * h * 3)
     }
 
@@ -39,7 +39,7 @@ final class NegativeFilterTests: XCTestCase {
     func testPercentileThresholdClampsToOneForSmallImages() {
         let w = 5, h = 5
         let input = Data([UInt8](repeating: 100, count: w * h * 3))
-        let out = NegativeFilter.apply(to: input, width: w, height: h)
+        let out = NegativeFilter.apply(to: input, width: w, height: h).0
         XCTAssertEqual(Int(out[0]), 0, "lo must not be forced to bin 0 when no pixel is there")
         XCTAssertEqual(Int(out[1]), 0)
         XCTAssertEqual(Int(out[2]), 0)
@@ -54,7 +54,7 @@ final class NegativeFilterTests: XCTestCase {
         // After inversion: pixel 0 → (255,255,255), pixel 1 → (0,0,0)
         // With full range [0,255] the stretch leaves these unchanged.
         let input = Data([0, 0, 0, 255, 255, 255])
-        let out = NegativeFilter.apply(to: input, width: 2, height: 1)
+        let out = NegativeFilter.apply(to: input, width: 2, height: 1).0
         XCTAssertEqual(out.count, 6)
         // pixel 0 after invert+stretch
         XCTAssertEqual(Int(out[0]), 255, accuracy: 1) // R
@@ -84,14 +84,14 @@ final class NegativeFilterTests: XCTestCase {
 
         // Reference: the original two-pass algorithm with explicit `inv` buffer.
         let reference = referenceApply(to: input, width: w, height: h)
-        let result    = NegativeFilter.apply(to: input, width: w, height: h)
+        let result    = NegativeFilter.apply(to: input, width: w, height: h).0
 
         XCTAssertEqual(result, reference)
     }
 
     func testApplyAutoLevelsFalseIsSimpleInvert() {
         let input = Data([10, 20, 30, 100, 150, 200])
-        let out = NegativeFilter.apply(to: input, width: 2, height: 1, applyAutoLevels: false)
+        let out = NegativeFilter.apply(to: input, width: 2, height: 1, applyAutoLevels: false).0
         XCTAssertEqual(out, Data([245, 235, 225, 155, 105, 55]))
     }
 
@@ -100,14 +100,14 @@ final class NegativeFilterTests: XCTestCase {
         var bytes = [UInt8](repeating: 0, count: w * h * 3)
         for i in 0..<bytes.count { bytes[i] = UInt8(i % 200 + 30) }
         let input = Data(bytes)
-        XCTAssertEqual(NegativeFilter.apply(to: input, width: w, height: h),
-                       NegativeFilter.apply(to: input, width: w, height: h, applyAutoLevels: true))
+        XCTAssertEqual(NegativeFilter.apply(to: input, width: w, height: h).0,
+                       NegativeFilter.apply(to: input, width: w, height: h, applyAutoLevels: true).0)
     }
 
     func testLargeFrameDoesNotCrash() {
         let w = 2592, h = 1680
         let input = Data([UInt8](repeating: 42, count: w * h * 3))
-        let out = NegativeFilter.apply(to: input, width: w, height: h)
+        let out = NegativeFilter.apply(to: input, width: w, height: h).0
         XCTAssertEqual(out.count, w * h * 3)
     }
 
@@ -143,9 +143,10 @@ final class NegativeFilterTests: XCTestCase {
         let loB = refPercentile(histB, pixelCount, 0.01)
         let hiB = refPercentile(histB, pixelCount, 0.99)
 
-        let scaleR = hiR > loR ? 255.0 / Float(hiR - loR) : 1.0
-        let scaleG = hiG > loG ? 255.0 / Float(hiG - loG) : 1.0
-        let scaleB = hiB > loB ? 255.0 / Float(hiB - loB) : 1.0
+        // Shared luminance scale: per-channel lo offsets remove the mask bias,
+        // one scale preserves colour ratios.
+        let lumRange = 0.299 * Float(hiR - loR) + 0.587 * Float(hiG - loG) + 0.114 * Float(hiB - loB)
+        let scale = lumRange > 0 ? 255.0 / lumRange : 1.0
 
         var out = Data(count: count)
         inv.withUnsafeBytes { srcPtr in
@@ -153,9 +154,9 @@ final class NegativeFilterTests: XCTestCase {
                 let src = srcPtr.bindMemory(to: UInt8.self).baseAddress!
                 let dst = dstPtr.bindMemory(to: UInt8.self).baseAddress!
                 for i in stride(from: 0, to: count, by: 3) {
-                    dst[i]     = refStretch(Int(src[i]),     lo: loR, scale: scaleR)
-                    dst[i + 1] = refStretch(Int(src[i + 1]), lo: loG, scale: scaleG)
-                    dst[i + 2] = refStretch(Int(src[i + 2]), lo: loB, scale: scaleB)
+                    dst[i]     = refStretch(Int(src[i]),     lo: loR, scale: scale)
+                    dst[i + 1] = refStretch(Int(src[i + 1]), lo: loG, scale: scale)
+                    dst[i + 2] = refStretch(Int(src[i + 2]), lo: loB, scale: scale)
                 }
             }
         }

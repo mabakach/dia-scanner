@@ -34,7 +34,7 @@ final class CaptureRenderingTests: XCTestCase {
 
     func testNegativeRenderHasExpectedSize() {
         let rgb = BayerDemosaic.demosaic(rawBayer, width: width, height: height, pattern: .bggr)
-        let neg = NegativeFilter.apply(to: rgb, width: width, height: height)
+        let neg = NegativeFilter.apply(to: rgb, width: width, height: height).0
         XCTAssertEqual(neg.count, width * height * 3)
     }
 
@@ -43,7 +43,7 @@ final class CaptureRenderingTests: XCTestCase {
     // have no effect and the fix would be pointless.
     func testPositiveAndNegativeModesDiffer() {
         let rgb     = BayerDemosaic.demosaic(rawBayer, width: width, height: height, pattern: .bggr)
-        let negRgb  = NegativeFilter.apply(to: rgb, width: width, height: height)
+        let negRgb  = NegativeFilter.apply(to: rgb, width: width, height: height).0
         XCTAssertNotEqual(rgb, negRgb, "Positive and negative renders must differ")
     }
 
@@ -51,7 +51,7 @@ final class CaptureRenderingTests: XCTestCase {
     // average brightness of the result should differ from the positive version.
     func testNegativePipelineChangesAverageBrightness() {
         let rgb    = BayerDemosaic.demosaic(rawBayer, width: width, height: height, pattern: .bggr)
-        let negRgb = NegativeFilter.apply(to: rgb, width: width, height: height)
+        let negRgb = NegativeFilter.apply(to: rgb, width: width, height: height).0
 
         let posSum = rgb.reduce(0) { $0 + Int($1) }
         let negSum = negRgb.reduce(0) { $0 + Int($1) }
@@ -64,10 +64,10 @@ final class CaptureRenderingTests: XCTestCase {
     // must give the same result — render is deterministic.
     func testRenderIsDeterministic() {
         let rgb1 = BayerDemosaic.demosaic(rawBayer, width: width, height: height, pattern: .bggr)
-        let neg1 = NegativeFilter.apply(to: rgb1, width: width, height: height)
+        let neg1 = NegativeFilter.apply(to: rgb1, width: width, height: height).0
 
         let rgb2 = BayerDemosaic.demosaic(rawBayer, width: width, height: height, pattern: .bggr)
-        let neg2 = NegativeFilter.apply(to: rgb2, width: width, height: height)
+        let neg2 = NegativeFilter.apply(to: rgb2, width: width, height: height).0
 
         XCTAssertEqual(neg1, neg2,
             "Re-rendering the same raw frame with the same mode must be idempotent")

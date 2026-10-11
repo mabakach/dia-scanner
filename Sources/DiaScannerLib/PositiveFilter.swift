@@ -20,9 +20,9 @@ import Foundation
 /// illumination correction happens before colour-mask removal and inversion.
 public enum PositiveFilter {
 
-    /// Default radial vignetting coefficient.  `0` = no correction; `0.5` gives corners
+    /// Default radial vignetting coefficient.  `0` = no correction (default); `0.5` gives corners
     /// a 2× gain relative to the centre.
-    public static let defaultVignetteK: Float = 0.5
+    public static let defaultVignetteK: Float = 0.0
 
     /// Per-channel clip points for the histogram stretch step.
     /// Returned by `apply` so callers can smooth them across frames.
@@ -85,7 +85,7 @@ public enum PositiveFilter {
         return out
     }
 
-    /// Applies vignetting correction and optionally per-channel auto-levels to packed RGB data.
+    /// Applies vignetting correction and optionally auto-levels to packed RGB data.
     /// Use this for positive (dia) slides.
     /// - Parameter vignetteK: Correction strength; `0` = none, up to `0.9` (10× corner gain).
     /// - Parameter applyAutoLevels: When `false`, skips the histogram stretch step.
@@ -97,22 +97,24 @@ public enum PositiveFilter {
                              vignetteK: Float = defaultVignetteK,
                              applyAutoLevels: Bool = true,
                              clips: Clips? = nil) -> (Data, Clips?) {
+        guard applyAutoLevels else {
+            return (applyVignetting(to: rgb, width: width, height: height, vignetteK: vignetteK), nil)
+        }
+        // Measure clip points from pre-vignette data: vignette boosts edges up to 2×, which would
+        // inflate hiR/hiG from landscape borders and shrink the effective scale for blue sky.
+        let fresh = measureClips(rgb, width: width, height: height)
         let corrected = applyVignetting(to: rgb, width: width, height: height, vignetteK: vignetteK)
-        guard applyAutoLevels else { return (corrected, nil) }
-        return autoLevels(corrected, width: width, height: height, clips: clips)
+        return (applyLevels(corrected, width: width, height: height, clips: clips ?? fresh), fresh)
     }
 
     // MARK: - Private helpers
 
-    private static func autoLevels(_ rgb: Data, width: Int, height: Int,
-                                   clips: Clips? = nil) -> (Data, Clips) {
+    private static func measureClips(_ rgb: Data, width: Int, height: Int) -> Clips {
         let pixelCount = width * height
         let count      = pixelCount * 3
-
         var histR = [Int](repeating: 0, count: 256)
         var histG = [Int](repeating: 0, count: 256)
         var histB = [Int](repeating: 0, count: 256)
-
         rgb.withUnsafeBytes { srcPtr in
             let src = srcPtr.bindMemory(to: UInt8.self).baseAddress!
             for i in stride(from: 0, to: count, by: 3) {
@@ -121,31 +123,32 @@ public enum PositiveFilter {
                 histB[Int(src[i + 2])] += 1
             }
         }
-
-        let fresh = Clips(
+        return Clips(
             loR: percentile(histR, pixelCount, 0.01), hiR: percentile(histR, pixelCount, 0.99),
             loG: percentile(histG, pixelCount, 0.01), hiG: percentile(histG, pixelCount, 0.99),
             loB: percentile(histB, pixelCount, 0.01), hiB: percentile(histB, pixelCount, 0.99)
         )
-        let c = clips ?? fresh
+    }
 
-        let scaleR = c.hiR > c.loR ? 255.0 / Float(c.hiR - c.loR) : 1.0
-        let scaleG = c.hiG > c.loG ? 255.0 / Float(c.hiG - c.loG) : 1.0
-        let scaleB = c.hiB > c.loB ? 255.0 / Float(c.hiB - c.loB) : 1.0
-
+    private static func applyLevels(_ rgb: Data, width: Int, height: Int, clips c: Clips) -> Data {
+        let count = width * height * 3
+        let lumRange = 0.299 * Float(c.hiR - c.loR)
+                     + 0.587 * Float(c.hiG - c.loG)
+                     + 0.114 * Float(c.hiB - c.loB)
+        let scale = lumRange > 0 ? 255.0 / lumRange : 1.0
         var out = Data(count: count)
         rgb.withUnsafeBytes { srcPtr in
             out.withUnsafeMutableBytes { dstPtr in
                 let src = srcPtr.bindMemory(to: UInt8.self).baseAddress!
                 let dst = dstPtr.bindMemory(to: UInt8.self).baseAddress!
                 for i in stride(from: 0, to: count, by: 3) {
-                    dst[i]     = stretch(Int(src[i]),     lo: c.loR, scale: scaleR)
-                    dst[i + 1] = stretch(Int(src[i + 1]), lo: c.loG, scale: scaleG)
-                    dst[i + 2] = stretch(Int(src[i + 2]), lo: c.loB, scale: scaleB)
+                    dst[i]     = stretch(Int(src[i]),     lo: c.loR, scale: scale)
+                    dst[i + 1] = stretch(Int(src[i + 1]), lo: c.loG, scale: scale)
+                    dst[i + 2] = stretch(Int(src[i + 2]), lo: c.loB, scale: scale)
                 }
             }
         }
-        return (out, fresh)
+        return out
     }
 
     private static func percentile(_ hist: [Int], _ total: Int, _ frac: Double) -> Int {

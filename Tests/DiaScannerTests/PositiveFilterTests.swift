@@ -13,21 +13,21 @@ final class PositiveFilterTests: XCTestCase {
     func testOutputSize() {
         let w = 4, h = 4
         let input = Data([UInt8](repeating: 128, count: w * h * 3))
-        let out = PositiveFilter.apply(to: input, width: w, height: h)
+        let out = PositiveFilter.apply(to: input, width: w, height: h).0
         XCTAssertEqual(out.count, w * h * 3)
     }
 
     func testUniformInputDoesNotCrash() {
         let w = 8, h = 8
         let input = Data([UInt8](repeating: 100, count: w * h * 3))
-        let out = PositiveFilter.apply(to: input, width: w, height: h)
+        let out = PositiveFilter.apply(to: input, width: w, height: h).0
         XCTAssertEqual(out.count, w * h * 3)
     }
 
     func testLargeFrameDoesNotCrash() {
         let w = 2592, h = 1680
         let input = Data([UInt8](repeating: 42, count: w * h * 3))
-        let out = PositiveFilter.apply(to: input, width: w, height: h)
+        let out = PositiveFilter.apply(to: input, width: w, height: h).0
         XCTAssertEqual(out.count, w * h * 3)
     }
 
@@ -55,7 +55,7 @@ final class PositiveFilterTests: XCTestCase {
         bytes[centre] = 200; bytes[centre + 1] = 200; bytes[centre + 2] = 200
 
         let input = Data(bytes)
-        let out   = PositiveFilter.apply(to: input, width: w, height: h)
+        let out   = PositiveFilter.apply(to: input, width: w, height: h, vignetteK: 0.5).0
 
         // In the output after vignette correction + auto-levels, the centre
         // should no longer dominate: the corner pixels should be at least half
@@ -90,7 +90,7 @@ final class PositiveFilterTests: XCTestCase {
         // not at the maximum value.
         let w = 3, h = 3
         let input = Data([UInt8](repeating: 100, count: w * h * 3))
-        let out = PositiveFilter.apply(to: input, width: w, height: h)
+        let out = PositiveFilter.apply(to: input, width: w, height: h).0
 
         // Corner pixel (index 0) and centre pixel (index 4 → pixel 4 = centre)
         let cornerR = Int(out[0])
@@ -104,7 +104,7 @@ final class PositiveFilterTests: XCTestCase {
     // The filter must not change the output if applied to a 1×1 image (degenerate case).
     func testSinglePixelDoesNotCrash() {
         let input = Data([128, 64, 32])
-        let out = PositiveFilter.apply(to: input, width: 1, height: 1)
+        let out = PositiveFilter.apply(to: input, width: 1, height: 1).0
         XCTAssertEqual(out.count, 3)
     }
 
@@ -116,8 +116,8 @@ final class PositiveFilterTests: XCTestCase {
         for i in 0..<bytes.count { bytes[i] = UInt8(i % 256) }
         let rgb = Data(bytes)
 
-        let pos = PositiveFilter.apply(to: rgb, width: w, height: h)
-        let neg = NegativeFilter.apply(to: rgb, width: w, height: h)
+        let pos = PositiveFilter.apply(to: rgb, width: w, height: h).0
+        let neg = NegativeFilter.apply(to: rgb, width: w, height: h).0
 
         XCTAssertNotEqual(pos, neg,
             "PositiveFilter and NegativeFilter must produce distinct output on the same input")
@@ -128,8 +128,8 @@ final class PositiveFilterTests: XCTestCase {
         var bytes = [UInt8](repeating: 0, count: w * h * 3)
         for i in 0..<bytes.count { bytes[i] = UInt8((i * 5) % 256) }
         let rgb = Data(bytes)
-        let withLevels    = PositiveFilter.apply(to: rgb, width: w, height: h, applyAutoLevels: true)
-        let withoutLevels = PositiveFilter.apply(to: rgb, width: w, height: h, applyAutoLevels: false)
+        let withLevels    = PositiveFilter.apply(to: rgb, width: w, height: h, applyAutoLevels: true).0
+        let withoutLevels = PositiveFilter.apply(to: rgb, width: w, height: h, applyAutoLevels: false).0
         XCTAssertNotEqual(withLevels, withoutLevels)
     }
 
@@ -138,8 +138,8 @@ final class PositiveFilterTests: XCTestCase {
         var bytes = [UInt8](repeating: 0, count: w * h * 3)
         for i in 0..<bytes.count { bytes[i] = UInt8((i * 5) % 256) }
         let rgb = Data(bytes)
-        XCTAssertEqual(PositiveFilter.apply(to: rgb, width: w, height: h),
-                       PositiveFilter.apply(to: rgb, width: w, height: h, applyAutoLevels: true))
+        XCTAssertEqual(PositiveFilter.apply(to: rgb, width: w, height: h).0,
+                       PositiveFilter.apply(to: rgb, width: w, height: h, applyAutoLevels: true).0)
     }
 
     // Applying the filter twice to the same data must yield the same result (deterministic).
@@ -149,8 +149,8 @@ final class PositiveFilterTests: XCTestCase {
         for i in 0..<bytes.count { bytes[i] = UInt8(i % 200 + 30) }
         let rgb = Data(bytes)
 
-        let out1 = PositiveFilter.apply(to: rgb, width: w, height: h)
-        let out2 = PositiveFilter.apply(to: rgb, width: w, height: h)
+        let out1 = PositiveFilter.apply(to: rgb, width: w, height: h).0
+        let out2 = PositiveFilter.apply(to: rgb, width: w, height: h).0
         XCTAssertEqual(out1, out2)
     }
 }
