@@ -204,6 +204,30 @@ struct ContentView: View {
                     }
                     Slider(value: $scanner.contrast, in: -1...1)
                     HStack {
+                        Text("Saturation")
+                            .font(.caption2)
+                        Spacer()
+                        Text(String(format: "%.2f", scanner.saturation))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $scanner.saturation, in: 0...2)
+                    Text("Colour balance")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    ForEach([("Red", \ScannerDevice.redGain), ("Green", \ScannerDevice.greenGain),
+                             ("Blue", \ScannerDevice.blueGain)], id: \.0) { name, path in
+                        HStack {
+                            Text(name)
+                                .font(.caption2)
+                            Spacer()
+                            Text(String(format: "%.2f", scanner[keyPath: path]))
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $scanner[dynamicMember: path], in: 0.5...2.0)
+                    }
+                    HStack {
                         Text("Vignette")
                             .font(.caption2)
                             .foregroundStyle(.secondary)

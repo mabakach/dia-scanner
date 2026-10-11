@@ -24,6 +24,11 @@ public enum PositiveFilter {
     /// a 2× gain relative to the centre.
     public static let defaultVignetteK: Float = 0.0
 
+    /// Display gamma applied to positives.  The sensor output is linear, so without it midtones
+    /// and shadows look too dark; `1/2.0` lifts them without needing more exposure (which would
+    /// clip highlights).
+    public static let displayGamma: Float = 1.0 / 2.0
+
     /// Per-channel clip points for the histogram stretch step.
     /// Returned by `apply` so callers can smooth them across frames.
     public struct Clips: Sendable {
@@ -98,13 +103,15 @@ public enum PositiveFilter {
                              applyAutoLevels: Bool = true,
                              clips: Clips? = nil) -> (Data, Clips?) {
         guard applyAutoLevels else {
-            return (applyVignetting(to: rgb, width: width, height: height, vignetteK: vignetteK), nil)
+            let corrected = applyVignetting(to: rgb, width: width, height: height, vignetteK: vignetteK)
+            return (applyGamma(corrected), nil)
         }
         // Measure clip points from pre-vignette data: vignette boosts edges up to 2×, which would
         // inflate hiR/hiG from landscape borders and shrink the effective scale for blue sky.
         let fresh = measureClips(rgb, width: width, height: height)
         let corrected = applyVignetting(to: rgb, width: width, height: height, vignetteK: vignetteK)
-        return (applyLevels(corrected, width: width, height: height, clips: clips ?? fresh), fresh)
+        let levelled = applyLevels(corrected, width: width, height: height, clips: clips ?? fresh)
+        return (applyGamma(levelled), fresh)
     }
 
     // MARK: - Private helpers
@@ -147,6 +154,15 @@ public enum PositiveFilter {
                     dst[i + 2] = stretch(Int(src[i + 2]), lo: c.loB, scale: scale)
                 }
             }
+        }
+        return out
+    }
+
+    private static func applyGamma(_ rgb: Data) -> Data {
+        let lut = (0..<256).map { clampByte(255 * pow(Float($0) / 255, displayGamma)) }
+        var out = rgb
+        out.withUnsafeMutableBytes { buf in
+            for i in 0..<buf.count { buf[i] = lut[Int(buf[i])] }
         }
         return out
     }
