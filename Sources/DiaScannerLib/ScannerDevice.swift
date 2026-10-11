@@ -267,9 +267,13 @@ public final class ScannerDevice: ObservableObject {
         var freshNeg: NegativeFilter.Clips?
         var freshPos: PositiveFilter.Clips?
         if negative {
+            // Measure clip points before vignette: boosted edge pixels would otherwise pull loR/loG/loB
+            // to near-zero after inversion, destroying the per-channel orange-mask offsets.
+            let preVigFresh = NegativeFilter.measureClips(rgb, width: width, height: h)
             rgb = PositiveFilter.applyVignetting(to: rgb, width: width, height: h, vignetteK: vignetteK)
-            (rgb, freshNeg) = NegativeFilter.apply(to: rgb, width: width, height: h,
-                                                    applyAutoLevels: autoLevels, clips: negClips)
+            (rgb, _) = NegativeFilter.apply(to: rgb, width: width, height: h,
+                                             applyAutoLevels: autoLevels, clips: negClips ?? preVigFresh)
+            freshNeg = preVigFresh
         } else {
             (rgb, freshPos) = PositiveFilter.apply(to: rgb, width: width, height: h,
                                                     vignetteK: vignetteK, applyAutoLevels: autoLevels,

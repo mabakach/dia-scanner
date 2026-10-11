@@ -41,6 +41,31 @@ public enum NegativeFilter {
         }
     }
 
+    /// Measures clip points from raw (pre-vignette) data by building histograms of the inverted
+    /// channel values. Call this before vignette correction so that boosted edge pixels do not
+    /// inflate `hiR`/`hiG` and corrupt the orange-mask offsets stored in `loR`/`loG`/`loB`.
+    public static func measureClips(_ rgb: Data, width: Int, height: Int) -> Clips {
+        let pixelCount = width * height
+        let count      = pixelCount * 3
+        precondition(rgb.count >= count, "RGB data size mismatch")
+        var histR = [Int](repeating: 0, count: 256)
+        var histG = [Int](repeating: 0, count: 256)
+        var histB = [Int](repeating: 0, count: 256)
+        rgb.withUnsafeBytes { srcPtr in
+            let src = srcPtr.bindMemory(to: UInt8.self).baseAddress!
+            for i in stride(from: 0, to: count, by: 3) {
+                histR[255 - Int(src[i])]     += 1
+                histG[255 - Int(src[i + 1])] += 1
+                histB[255 - Int(src[i + 2])] += 1
+            }
+        }
+        return Clips(
+            loR: percentile(histR, pixelCount, 0.01), hiR: percentile(histR, pixelCount, 0.99),
+            loG: percentile(histG, pixelCount, 0.01), hiG: percentile(histG, pixelCount, 0.99),
+            loB: percentile(histB, pixelCount, 0.01), hiB: percentile(histB, pixelCount, 0.99)
+        )
+    }
+
     /// Inverts packed RGB data and optionally auto-levels each channel to remove the orange mask.
     /// Input: 3 bytes per pixel, R-G-B order, `width × height` pixels.
     /// - Parameter clips: Pre-computed (and optionally smoothed) clip points. When `nil`, clips
@@ -90,10 +115,13 @@ public enum NegativeFilter {
         // Use caller-supplied (smoothed) clips if available; fall back to fresh on first frame.
         let c = clips ?? fresh
 
-        // Pass 2 — stretch each channel from [lo, hi] → [0, 255].
-        let scaleR = c.hiR > c.loR ? 255.0 / Float(c.hiR - c.loR) : 1.0
-        let scaleG = c.hiG > c.loG ? 255.0 / Float(c.hiG - c.loG) : 1.0
-        let scaleB = c.hiB > c.loB ? 255.0 / Float(c.hiB - c.loB) : 1.0
+        // Pass 2 — invert and stretch from [lo, hi] → [0, 255] with a shared luminance scale.
+        // Per-channel lo offsets remove the orange mask's per-channel bias; the shared scale
+        // preserves the scene's colour ratios after mask removal.
+        let lumRange = 0.299 * Float(c.hiR - c.loR)
+                     + 0.587 * Float(c.hiG - c.loG)
+                     + 0.114 * Float(c.hiB - c.loB)
+        let scale = lumRange > 0 ? 255.0 / lumRange : 1.0
 
         var out = Data(count: count)
         rgb.withUnsafeBytes { srcPtr in
@@ -101,9 +129,9 @@ public enum NegativeFilter {
                 let src = srcPtr.bindMemory(to: UInt8.self).baseAddress!
                 let dst = dstPtr.bindMemory(to: UInt8.self).baseAddress!
                 for i in stride(from: 0, to: count, by: 3) {
-                    dst[i]     = stretch(255 - Int(src[i]),     lo: c.loR, scale: scaleR)
-                    dst[i + 1] = stretch(255 - Int(src[i + 1]), lo: c.loG, scale: scaleG)
-                    dst[i + 2] = stretch(255 - Int(src[i + 2]), lo: c.loB, scale: scaleB)
+                    dst[i]     = stretch(255 - Int(src[i]),     lo: c.loR, scale: scale)
+                    dst[i + 1] = stretch(255 - Int(src[i + 1]), lo: c.loG, scale: scale)
+                    dst[i + 2] = stretch(255 - Int(src[i + 2]), lo: c.loB, scale: scale)
                 }
             }
         }
